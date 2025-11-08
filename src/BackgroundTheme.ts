@@ -151,18 +151,7 @@ export class BackgroundTheme {
   }
 
   private createSunnyDayBackground(): void {
-    // Large ground plane extending to horizon
-    const groundGeometry = new THREE.PlaneGeometry(800, 600, 60, 60);
-    const groundMaterial = new THREE.MeshBasicMaterial({
-      vertexColors: true,
-    });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(0, -60, -100);
-
-    // Add procedural color variation to create field patterns
-    const colors = [];
-    const color = new THREE.Color();
+    // Define field colors for use throughout the background
     const fieldColors = [
       new THREE.Color(0x8bc34a), // Light green
       new THREE.Color(0x7cb342), // Medium green
@@ -172,32 +161,50 @@ export class BackgroundTheme {
       new THREE.Color(0xcddc39), // Lime
     ];
 
-    const positionAttribute = groundGeometry.attributes.position;
-    const gridSize = 20; // Size of each "field"
+    try {
+      // Large ground plane extending to horizon
+      const groundGeometry = new THREE.PlaneGeometry(800, 600, 60, 60);
+      const groundMaterial = new THREE.MeshBasicMaterial({
+        vertexColors: true,
+      });
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.set(0, -60, -100);
 
-    for (let i = 0; i < positionAttribute.count; i++) {
-      const x = positionAttribute.getX(i);
-      const z = positionAttribute.getZ(i);
+      // Add procedural color variation to create field patterns
+      const colors: number[] = [];
+      const color = new THREE.Color();
 
-      // Determine which field this vertex belongs to
-      const fieldX = Math.floor(x / gridSize);
-      const fieldZ = Math.floor(z / gridSize);
-      const fieldIndex = (fieldX * 7 + fieldZ * 11) % fieldColors.length;
+      const positionAttribute = groundGeometry.attributes.position;
+      const gridSize = 20; // Size of each "field"
 
-      // Add some variation within the field
-      const variation = 0.9 + Math.random() * 0.2;
-      color.copy(fieldColors[fieldIndex]).multiplyScalar(variation);
+      for (let i = 0; i < positionAttribute.count; i++) {
+        const x = positionAttribute.getX(i);
+        const z = positionAttribute.getZ(i);
 
-      colors.push(color.r, color.g, color.b);
+        // Determine which field this vertex belongs to
+        const fieldX = Math.floor(x / gridSize);
+        const fieldZ = Math.floor(z / gridSize);
+        const fieldIndex = Math.abs((fieldX * 7 + fieldZ * 11)) % fieldColors.length;
 
-      // Add subtle height variation for terrain
-      const height = (Math.sin(x * 0.02) + Math.cos(z * 0.02)) * 1.5 + Math.random() * 0.5;
-      positionAttribute.setY(i, height);
+        // Add some variation within the field
+        const variation = 0.9 + Math.random() * 0.2;
+        color.copy(fieldColors[fieldIndex]).multiplyScalar(variation);
+
+        colors.push(color.r, color.g, color.b);
+
+        // Add subtle height variation for terrain
+        const height = (Math.sin(x * 0.02) + Math.cos(z * 0.02)) * 1.5 + Math.random() * 0.5;
+        positionAttribute.setY(i, height);
+      }
+
+      positionAttribute.needsUpdate = true;
+      groundGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      groundGeometry.computeVertexNormals();
+      this.addBackgroundObject(ground);
+    } catch (error) {
+      console.error('Error creating sunny day ground:', error);
     }
-
-    groundGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    groundGeometry.computeVertexNormals();
-    this.addBackgroundObject(ground);
 
     // Add some larger distinct field patches for variety
     for (let i = 0; i < 20; i++) {
