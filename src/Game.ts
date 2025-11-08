@@ -8,6 +8,7 @@ import { ParticleSystem } from './ParticleSystem';
 import { ScreenTransition } from './ScreenTransition';
 import { CameraIntro } from './CameraIntro';
 import { getCollectibleTypeForSkin } from './skins';
+import { BackgroundTheme } from './BackgroundTheme';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -21,6 +22,7 @@ export class Game {
   private particles: ParticleSystem;
   private transition: ScreenTransition;
   private cameraIntro: CameraIntro;
+  private backgroundTheme: BackgroundTheme;
   private controlCanvas: HTMLCanvasElement;
   private lastTime: number;
   private running: boolean;
@@ -31,6 +33,9 @@ export class Game {
   private damageCooldown: number = 0;
   private chickenBotCooldown: number = 0;
   private selectedSkin?: SkinDefinition;
+  private ambientLight: THREE.AmbientLight;
+  private directionalLight: THREE.DirectionalLight;
+  private hemisphereLight: THREE.HemisphereLight;
 
   constructor(config: GameConfig, skin?: SkinDefinition) {
     this.canvas = config.canvas;
@@ -56,6 +61,7 @@ export class Game {
 
     // Scene
     this.scene = new THREE.Scene();
+    // Background will be set by theme system
     this.scene.background = new THREE.Color(0x87ceeb);
     this.scene.fog = new THREE.Fog(0x87ceeb, 30, 100);
 
@@ -80,8 +86,38 @@ export class Game {
     // Camera Intro
     this.cameraIntro = new CameraIntro(this.camera);
 
-    // Lighting
-    this.setupLighting();
+    // Initialize lights (will be configured by theme)
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    this.scene.add(this.ambientLight);
+
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    this.directionalLight.castShadow = true;
+    this.directionalLight.shadow.camera.left = -50;
+    this.directionalLight.shadow.camera.right = 50;
+    this.directionalLight.shadow.camera.top = 50;
+    this.directionalLight.shadow.camera.bottom = -50;
+    this.directionalLight.shadow.camera.near = 0.1;
+    this.directionalLight.shadow.camera.far = 100;
+    this.directionalLight.shadow.mapSize.width = 2048;
+    this.directionalLight.shadow.mapSize.height = 2048;
+    this.scene.add(this.directionalLight);
+
+    this.hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x4a90e2, 0.4);
+    this.scene.add(this.hemisphereLight);
+
+    // Point lights for collectibles
+    const pointLight1 = new THREE.PointLight(0xffdd00, 0.5, 10);
+    pointLight1.position.set(15, 5, -8);
+    this.scene.add(pointLight1);
+
+    const pointLight2 = new THREE.PointLight(0xffdd00, 0.5, 10);
+    pointLight2.position.set(30, 7, 8);
+    this.scene.add(pointLight2);
+
+    // Background Theme System
+    this.backgroundTheme = new BackgroundTheme(this.scene);
+    this.backgroundTheme.setTheme(this.currentLevel);
+    this.updateLightsFromTheme();
 
     // Level - pass collectible type based on skin
     const collectibleType = skin ? getCollectibleTypeForSkin(skin.id) : 'orb';
@@ -129,37 +165,83 @@ export class Game {
     }, 100);
   }
 
-  private setupLighting(): void {
-    // Ambient light
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    this.scene.add(ambientLight);
+  private updateLightsFromTheme(): void {
+    const theme = this.backgroundTheme.getCurrentTheme();
+    const config = this.getThemeConfigForLights(theme);
 
-    // Directional light (sun)
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(20, 30, 10);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.camera.left = -50;
-    directionalLight.shadow.camera.right = 50;
-    directionalLight.shadow.camera.top = 50;
-    directionalLight.shadow.camera.bottom = -50;
-    directionalLight.shadow.camera.near = 0.1;
-    directionalLight.shadow.camera.far = 100;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    this.scene.add(directionalLight);
+    this.ambientLight.color.setHex(config.ambientLightColor);
+    this.ambientLight.intensity = config.ambientLightIntensity;
 
-    // Hemisphere light for better ambient
-    const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x4a90e2, 0.4);
-    this.scene.add(hemisphereLight);
+    this.directionalLight.color.setHex(config.sunColor);
+    this.directionalLight.intensity = config.sunIntensity;
+    this.directionalLight.position.copy(config.sunPosition);
 
-    // Point lights for collectibles
-    const pointLight1 = new THREE.PointLight(0xffdd00, 0.5, 10);
-    pointLight1.position.set(15, 5, -8);
-    this.scene.add(pointLight1);
+    this.hemisphereLight.color.setHex(config.hemisphereSkye);
+    this.hemisphereLight.groundColor.setHex(config.hemisphereGround);
+    this.hemisphereLight.intensity = config.hemisphereIntensity;
+  }
 
-    const pointLight2 = new THREE.PointLight(0xffdd00, 0.5, 10);
-    pointLight2.position.set(30, 7, 8);
-    this.scene.add(pointLight2);
+  private getThemeConfigForLights(levelNumber: number): any {
+    // This duplicates theme config from BackgroundTheme, but keeps lighting sync
+    switch (levelNumber) {
+      case 1:
+        return {
+          ambientLightColor: 0xffffff,
+          ambientLightIntensity: 0.7,
+          sunColor: 0xfffacd,
+          sunIntensity: 1.0,
+          sunPosition: new THREE.Vector3(30, 40, 20),
+          hemisphereSkye: 0x87ceeb,
+          hemisphereGround: 0x6aa84f,
+          hemisphereIntensity: 0.5,
+        };
+      case 2:
+        return {
+          ambientLightColor: 0xffd4a3,
+          ambientLightIntensity: 0.6,
+          sunColor: 0xff6b35,
+          sunIntensity: 0.9,
+          sunPosition: new THREE.Vector3(40, 15, 25),
+          hemisphereSkye: 0xff7f50,
+          hemisphereGround: 0x8b4513,
+          hemisphereIntensity: 0.4,
+        };
+      case 3:
+        return {
+          ambientLightColor: 0xe6f7ff,
+          ambientLightIntensity: 0.8,
+          sunColor: 0xffffff,
+          sunIntensity: 1.1,
+          sunPosition: new THREE.Vector3(35, 50, 15),
+          hemisphereSkye: 0xd0f0ff,
+          hemisphereGround: 0x9eb3bf,
+          hemisphereIntensity: 0.6,
+        };
+      case 4:
+        return {
+          ambientLightColor: 0x8888ff,
+          ambientLightIntensity: 0.4,
+          sunColor: 0xaaaaff,
+          sunIntensity: 0.5,
+          sunPosition: new THREE.Vector3(25, 35, 30),
+          hemisphereSkye: 0x2a2a5e,
+          hemisphereGround: 0x0a0a1e,
+          hemisphereIntensity: 0.3,
+        };
+      case 5:
+        return {
+          ambientLightColor: 0xccccff,
+          ambientLightIntensity: 0.3,
+          sunColor: 0xddddff,
+          sunIntensity: 0.6,
+          sunPosition: new THREE.Vector3(30, 30, 20),
+          hemisphereSkye: 0x1a0033,
+          hemisphereGround: 0x000011,
+          hemisphereIntensity: 0.2,
+        };
+      default:
+        return this.getThemeConfigForLights(1);
+    }
   }
 
   private handleResize(): void {
@@ -226,6 +308,9 @@ export class Game {
 
     // Update particles
     this.particles.update(deltaTime);
+
+    // Update background theme animations
+    this.backgroundTheme.update(deltaTime);
 
     // Emit particles for collected items
     this.level.data.collectibles.forEach((collectible) => {
@@ -430,6 +515,10 @@ export class Game {
       // Create new level
       const collectibleType = this.selectedSkin ? getCollectibleTypeForSkin(this.selectedSkin.id) : 'orb';
       this.level = new Level(this.scene, this.currentLevel, collectibleType);
+
+      // Update background theme for new level
+      this.backgroundTheme.setTheme(this.currentLevel);
+      this.updateLightsFromTheme();
 
       // Reset player position
       this.player.state.position.copy(this.level.data.startPosition);
