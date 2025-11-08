@@ -55,6 +55,9 @@ export interface Enemy {
   fireTimer?: number;
   // Pusher-specific
   patrolDirection?: number;
+  patrolCenter?: THREE.Vector3;
+  isChasing?: boolean;
+  grounded?: boolean;
 }
 
 export interface ChickenBot {

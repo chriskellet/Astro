@@ -22,6 +22,8 @@ export class Player {
   private lastBoosterState: boolean = false;
   private rocketBoosterTime: number = 0;
   private rocketBoosterMaxTime: number = 3.0; // 3 seconds
+  private rocketStartHeight: number = 0;
+  private maxRocketHeight: number = 10; // Height at which thrust reduces to hover
 
   constructor(physics: Physics, camera: THREE.Camera, particles: ParticleSystem) {
     this.physics = physics;
@@ -222,6 +224,7 @@ export class Player {
       this.rocketJumpAvailable = false;
       this.state.isBoosterActive = true;
       this.rocketBoosterTime = 0;
+      this.rocketStartHeight = this.state.position.y; // Track starting height
     }
 
     // Continue applying thrust while booster button is held and rocket jump is active
@@ -229,7 +232,10 @@ export class Player {
       // Update booster time
       this.rocketBoosterTime += deltaTime;
 
-      // Calculate thrust multiplier based on time remaining
+      // Calculate how high we've risen
+      const heightGained = this.state.position.y - this.rocketStartHeight;
+
+      // Calculate thrust multiplier based on time remaining AND height
       let thrustMultiplier = 1.0;
       if (this.rocketBoosterTime >= this.rocketBoosterMaxTime) {
         // Booster time expired - create splutter effect
@@ -240,8 +246,21 @@ export class Player {
         thrustMultiplier = Math.random() * 0.3;
       }
 
+      // Calculate height-based thrust adjustment
+      let heightBasedThrust = this.boosterThrust;
+
+      if (heightGained < this.maxRocketHeight) {
+        // Strong initial thrust when below max height
+        // Increase base thrust for better initial response
+        heightBasedThrust = 35; // Stronger than before (was 25)
+      } else {
+        // Reduce to hover thrust when at/above max height
+        // Just enough to counteract gravity (15) plus a bit extra
+        heightBasedThrust = 18; // Gentle hover
+      }
+
       // Apply upward thrust to counteract gravity and move upwards
-      this.state.velocity.y += this.boosterThrust * deltaTime * thrustMultiplier;
+      this.state.velocity.y += heightBasedThrust * deltaTime * thrustMultiplier;
 
       // Emit flame and smoke particles from feet
       const leftFootPos = this.state.position.clone();
