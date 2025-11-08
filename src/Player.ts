@@ -11,6 +11,8 @@ export class Player {
   private particles: ParticleSystem;
   private skin: SkinDefinition;
   private moveSpeed: number = 8;
+  private acceleration: number = 40; // Acceleration rate for smooth movement
+  private friction: number = 20; // Deceleration when no input
   private jumpForce: number = 12;
   private boosterThrust: number = 25;
   private radius: number = 0.5;
@@ -431,7 +433,7 @@ export class Player {
   }
 
   public update(controls: Controls, deltaTime: number, platforms: any[]): void {
-    // Apply movement
+    // Apply movement with acceleration
     const moveVector = new THREE.Vector3();
 
     if (controls.left) moveVector.x -= 1;
@@ -441,15 +443,35 @@ export class Player {
 
     if (moveVector.length() > 0) {
       moveVector.normalize();
-      this.state.velocity.x = moveVector.x * this.moveSpeed;
-      this.state.velocity.z = moveVector.z * this.moveSpeed;
+
+      // Calculate target velocity
+      const targetVelocityX = moveVector.x * this.moveSpeed;
+      const targetVelocityZ = moveVector.z * this.moveSpeed;
+
+      // Smoothly accelerate towards target velocity
+      const accelerationStep = this.acceleration * deltaTime;
+      this.state.velocity.x += Math.sign(targetVelocityX - this.state.velocity.x) *
+        Math.min(Math.abs(targetVelocityX - this.state.velocity.x), accelerationStep);
+      this.state.velocity.z += Math.sign(targetVelocityZ - this.state.velocity.z) *
+        Math.min(Math.abs(targetVelocityZ - this.state.velocity.z), accelerationStep);
 
       // Set target rotation to face movement direction
       this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
     } else {
-      // Apply friction
-      this.state.velocity.x *= 0.85;
-      this.state.velocity.z *= 0.85;
+      // Apply friction to decelerate smoothly
+      const frictionStep = this.friction * deltaTime;
+
+      if (Math.abs(this.state.velocity.x) > frictionStep) {
+        this.state.velocity.x -= Math.sign(this.state.velocity.x) * frictionStep;
+      } else {
+        this.state.velocity.x = 0;
+      }
+
+      if (Math.abs(this.state.velocity.z) > frictionStep) {
+        this.state.velocity.z -= Math.sign(this.state.velocity.z) * frictionStep;
+      } else {
+        this.state.velocity.z = 0;
+      }
     }
 
     // Smoothly interpolate rotation towards target
