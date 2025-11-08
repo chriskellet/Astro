@@ -59,7 +59,7 @@ export class Player {
     this.cameraOffset = new THREE.Vector3(0, 8, 12);
 
     this.state = {
-      position: new THREE.Vector3(0, 6, 0),
+      position: new THREE.Vector3(0, 7, 0),
       velocity: new THREE.Vector3(0, 0, 0),
       isJumping: false,
       canDoubleJump: true,
