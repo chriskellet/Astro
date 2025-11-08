@@ -12,6 +12,7 @@ export interface PlayerState {
   isJumping: boolean;
   canDoubleJump: boolean;
   doubleJumpUsed: boolean;
+  isBoosterActive: boolean;
   health: number;
   score: number;
 }
@@ -20,6 +21,7 @@ export interface Controls {
   left: boolean;
   right: boolean;
   jump: boolean;
+  booster: boolean;
   forward: boolean;
   backward: boolean;
 }

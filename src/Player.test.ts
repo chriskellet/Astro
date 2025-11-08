@@ -2,16 +2,21 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
 import { Player } from './Player';
 import { Physics } from './Physics';
+import { ParticleSystem } from './ParticleSystem';
 
 describe('Player', () => {
   let player: Player;
   let physics: Physics;
   let camera: THREE.PerspectiveCamera;
+  let particles: ParticleSystem;
+  let scene: THREE.Scene;
 
   beforeEach(() => {
     physics = new Physics();
     camera = new THREE.PerspectiveCamera();
-    player = new Player(physics, camera);
+    scene = new THREE.Scene();
+    particles = new ParticleSystem(scene);
+    player = new Player(physics, camera, particles);
   });
 
   describe('initialization', () => {
@@ -20,6 +25,7 @@ describe('Player', () => {
       expect(player.state.score).toBe(0);
       expect(player.state.isJumping).toBe(false);
       expect(player.state.doubleJumpUsed).toBe(false);
+      expect(player.state.isBoosterActive).toBe(false);
     });
 
     it('should create a mesh', () => {
