@@ -154,10 +154,11 @@ export class EnemyFactory {
       const z = Math.sin(angle) * 0.6;
       spike.position.set(x, 0, z);
 
-      // Rotate to point outward
-      // First rotate 90° around Z to make cone horizontal
-      spike.rotation.z = Math.PI / 2;
-      // Then rotate around Y to face outward at the correct angle
+      // Rotate to point radially outward
+      // Cone points up (+Y) by default
+      // First tilt it 90° around X to make it point forward along +Z
+      spike.rotation.x = -Math.PI / 2;
+      // Then rotate around Y by the angle to point it radially outward
       spike.rotation.y = angle;
 
       spike.castShadow = true;
