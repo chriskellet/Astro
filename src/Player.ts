@@ -546,17 +546,16 @@ export class Player {
       // PID-style velocity controller for smooth, controlled flight
       const gravity = 25; // Magnitude of gravity (matches Physics.ts)
 
-      // Determine target velocity based on current state
-      let targetVelocity;
-      let timeToTarget;
+      // Always target max upward velocity for consistent behavior
+      const targetVelocity = this.maxUpwardVelocity;
 
+      // Use different response times based on current state
+      let timeToTarget;
       if (this.state.velocity.y < 0) {
-        // Falling - target is to stop falling (reach 0 m/s)
-        targetVelocity = 0;
+        // Falling - use recovery time to get to target velocity
         timeToTarget = this.fallRecoveryTime;
       } else {
-        // Rising - target is max upward velocity (will accelerate if below, decelerate if above)
-        targetVelocity = this.maxUpwardVelocity;
+        // Rising - use rise time to reach/maintain target velocity
         timeToTarget = this.riseTime;
       }
 
