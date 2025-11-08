@@ -154,7 +154,7 @@ export class Level {
 
     // Update enemies
     this.data.enemies.forEach((enemy) => {
-      this.enemyFactory.updateEnemy(enemy, deltaTime, playerPosition, particles);
+      this.enemyFactory.updateEnemy(enemy, deltaTime, playerPosition, particles, this.data.platforms);
     });
 
     // Update chicken bot

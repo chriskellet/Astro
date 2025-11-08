@@ -36,7 +36,9 @@ export class EnemyFactory {
       enemy.fireTimer = 0;
     } else if (type === 'pusher') {
       enemy.patrolDirection = 1;
-      enemy.velocity.x = 1;
+      enemy.patrolCenter = new THREE.Vector3(x, y, z);
+      enemy.isChasing = false;
+      enemy.grounded = false;
     }
 
     return enemy;
@@ -330,13 +332,14 @@ export class EnemyFactory {
     enemy: Enemy,
     deltaTime: number,
     playerPosition: THREE.Vector3,
-    particles: ParticleSystem
+    particles: ParticleSystem,
+    platforms: any[]
   ): void {
     if (!enemy.isActive) return;
 
     switch (enemy.type) {
       case 'pusher':
-        this.updatePusher(enemy, deltaTime, playerPosition);
+        this.updatePusher(enemy, deltaTime, playerPosition, platforms);
         break;
       case 'spiky':
         this.updateSpiky(enemy, deltaTime);
@@ -353,31 +356,105 @@ export class EnemyFactory {
   private updatePusher(
     enemy: Enemy,
     deltaTime: number,
-    _playerPosition: THREE.Vector3
+    playerPosition: THREE.Vector3,
+    platforms: any[]
   ): void {
-    // Patrol back and forth
     const patrolSpeed = 2;
-    const patrolRange = 3;
+    const chaseSpeed = 3.5;
+    const patrolRange = 2.5;
+    const detectionRange = 8;
+    const enemyRadius = 0.5;
+    const enemyHeight = 1;
 
-    // Move in patrol direction
-    enemy.velocity.x = (enemy.patrolDirection || 1) * patrolSpeed;
-    enemy.position.x += enemy.velocity.x * deltaTime;
+    // Apply gravity
+    enemy.velocity.y += -25 * deltaTime;
 
-    // Check if we've gone too far from start position
-    const distFromStart = Math.abs(enemy.position.x - enemy.mesh.position.x);
-    if (distFromStart > patrolRange) {
-      enemy.patrolDirection = -(enemy.patrolDirection || 1);
+    // Check platform collisions (simplified physics)
+    enemy.grounded = false;
+    for (const platform of platforms) {
+      const halfWidth = platform.size.x / 2;
+      const halfDepth = platform.size.z / 2;
+      const halfHeight = platform.size.y / 2;
+
+      // Check if enemy is above the platform
+      if (
+        enemy.position.x > platform.position.x - halfWidth - enemyRadius &&
+        enemy.position.x < platform.position.x + halfWidth + enemyRadius &&
+        enemy.position.z > platform.position.z - halfDepth - enemyRadius &&
+        enemy.position.z < platform.position.z + halfDepth + enemyRadius
+      ) {
+        const platformTop = platform.position.y + halfHeight;
+        const enemyBottom = enemy.position.y - enemyHeight / 2;
+
+        // Landing on platform
+        if (enemyBottom <= platformTop && enemyBottom + enemy.velocity.y * deltaTime > platformTop) {
+          enemy.position.y = platformTop + enemyHeight / 2;
+          enemy.velocity.y = 0;
+          enemy.grounded = true;
+          break;
+        }
+      }
     }
 
-    // Face the direction we're moving
-    if (enemy.velocity.x > 0) {
-      enemy.mesh.rotation.y = -Math.PI / 2;
+    // Only move horizontally if grounded
+    if (enemy.grounded) {
+      // Check distance to player (only horizontal)
+      const horizontalDistance = Math.sqrt(
+        Math.pow(playerPosition.x - enemy.position.x, 2) +
+        Math.pow(playerPosition.z - enemy.position.z, 2)
+      );
+
+      if (horizontalDistance < detectionRange) {
+        // Chase the player
+        enemy.isChasing = true;
+        const directionToPlayer = new THREE.Vector3(
+          playerPosition.x - enemy.position.x,
+          0,
+          playerPosition.z - enemy.position.z
+        ).normalize();
+
+        enemy.velocity.x = directionToPlayer.x * chaseSpeed;
+        enemy.velocity.z = directionToPlayer.z * chaseSpeed;
+
+        // Face the player
+        const angle = Math.atan2(directionToPlayer.x, directionToPlayer.z);
+        enemy.mesh.rotation.y = angle;
+      } else {
+        // Patrol around center
+        enemy.isChasing = false;
+        const patrolCenter = enemy.patrolCenter || enemy.position;
+
+        // Patrol in X direction
+        enemy.velocity.x = (enemy.patrolDirection || 1) * patrolSpeed;
+        enemy.velocity.z = 0;
+
+        // Check if we've gone too far from patrol center
+        const distFromCenter = enemy.position.x - patrolCenter.x;
+        if (Math.abs(distFromCenter) > patrolRange) {
+          enemy.patrolDirection = -(enemy.patrolDirection || 1);
+        }
+
+        // Face the direction we're moving
+        if (enemy.velocity.x > 0) {
+          enemy.mesh.rotation.y = -Math.PI / 2;
+        } else {
+          enemy.mesh.rotation.y = Math.PI / 2;
+        }
+      }
     } else {
-      enemy.mesh.rotation.y = Math.PI / 2;
+      // In air - reduce horizontal velocity
+      enemy.velocity.x *= 0.95;
+      enemy.velocity.z *= 0.95;
     }
 
-    // Animate arms (push motion)
-    const armOffset = Math.sin(Date.now() * 0.005) * 0.2;
+    // Apply velocity
+    enemy.position.x += enemy.velocity.x * deltaTime;
+    enemy.position.y += enemy.velocity.y * deltaTime;
+    enemy.position.z += enemy.velocity.z * deltaTime;
+
+    // Animate arms (push motion, faster when chasing)
+    const armSpeed = enemy.isChasing ? 0.01 : 0.005;
+    const armOffset = Math.sin(Date.now() * armSpeed) * 0.2;
     const arms = enemy.mesh.children.filter((child: THREE.Object3D) => child instanceof THREE.Mesh);
     if (arms.length > 2) {
       const leftArm = arms[2] as THREE.Mesh;
@@ -448,7 +525,7 @@ export class EnemyFactory {
   ): void {
     if (!chickenBot.isActive || !chickenBot.followPlayer) return;
 
-    // Follow player at a distance
+    // Follow player at a distance (including vertical)
     const directionToPlayer = new THREE.Vector3()
       .subVectors(playerPosition, chickenBot.position)
       .normalize();
@@ -462,6 +539,11 @@ export class EnemyFactory {
       chickenBot.position.z += directionToPlayer.z * speed * deltaTime;
     }
 
+    // Smoothly follow player's height (flying chicken!)
+    const verticalSpeed = 3;
+    const heightDifference = playerPosition.y - chickenBot.position.y;
+    chickenBot.position.y += heightDifference * verticalSpeed * deltaTime;
+
     // Face the player
     const angle = Math.atan2(directionToPlayer.x, directionToPlayer.z);
     chickenBot.mesh.rotation.y = angle;
@@ -471,8 +553,10 @@ export class EnemyFactory {
     chickenBot.mesh.position.copy(chickenBot.position);
     chickenBot.mesh.position.y += bobAmount;
 
-    // Flap wings
-    const flapAmount = Math.sin(Date.now() * 0.008) * 0.2;
+    // Flap wings (flap faster when moving vertically)
+    const verticalMovement = Math.abs(heightDifference);
+    const flapSpeed = 0.008 + verticalMovement * 0.01;
+    const flapAmount = Math.sin(Date.now() * flapSpeed) * 0.2;
     const wings = chickenBot.mesh.children.filter((_child: THREE.Object3D, index: number) => index >= 8 && index <= 9);
     if (wings.length >= 2) {
       const leftWing = wings[0] as THREE.Mesh;
