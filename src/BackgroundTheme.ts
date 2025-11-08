@@ -44,8 +44,8 @@ export class BackgroundTheme {
         return {
           backgroundColor: 0x87ceeb,
           fogColor: 0x87ceeb,
-          fogNear: 40,
-          fogFar: 120,
+          fogNear: 100,
+          fogFar: 800,
           ambientLightColor: 0xffffff,
           ambientLightIntensity: 0.7,
           sunColor: 0xfffacd,
@@ -163,15 +163,14 @@ export class BackgroundTheme {
 
     try {
       // Large ground plane extending to horizon
-      // Position it centered under the level, extending forward and back
-      // Width (X) = 1200, Depth (Z when rotated) = 1200 for good coverage
-      const groundGeometry = new THREE.PlaneGeometry(1200, 1200, 80, 80);
+      // Make it very long in Z to cover the view from the angled camera
+      const groundGeometry = new THREE.PlaneGeometry(2000, 3000, 100, 120);
       const groundMaterial = new THREE.MeshBasicMaterial({
         vertexColors: true,
       });
       const ground = new THREE.Mesh(groundGeometry, groundMaterial);
       ground.rotation.x = -Math.PI / 2;
-      ground.position.set(0, -60, 0); // Center it at Z:0 instead of -100
+      ground.position.set(0, -60, 100); // Position it further forward
 
       // Add procedural color variation to create field patterns
       const colors: number[] = [];
