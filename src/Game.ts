@@ -4,6 +4,8 @@ import { Player } from './Player';
 import { Level } from './Level';
 import { Physics } from './Physics';
 import { VirtualGamepad } from './VirtualGamepad';
+import { ParticleSystem } from './ParticleSystem';
+import { ScreenTransition } from './ScreenTransition';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -14,12 +16,15 @@ export class Game {
   private level: Level;
   private physics: Physics;
   private gamepad: VirtualGamepad;
+  private particles: ParticleSystem;
+  private transition: ScreenTransition;
   private controlCanvas: HTMLCanvasElement;
   private lastTime: number;
   private running: boolean;
   private scoreElement: HTMLElement | null;
   private levelElement: HTMLElement | null;
   private currentLevel: number;
+  private maxLevels: number = 3;
 
   constructor(config: GameConfig) {
     this.canvas = config.canvas;
@@ -59,6 +64,12 @@ export class Game {
     // Physics
     this.physics = new Physics();
 
+    // Particle System
+    this.particles = new ParticleSystem(this.scene);
+
+    // Screen Transition
+    this.transition = new ScreenTransition();
+
     // Lighting
     this.setupLighting();
 
@@ -66,7 +77,7 @@ export class Game {
     this.level = new Level(this.scene, this.currentLevel);
 
     // Player
-    this.player = new Player(this.physics, this.camera);
+    this.player = new Player(this.physics, this.camera, this.particles);
     this.scene.add(this.player.mesh);
 
     // Create control canvas overlay
@@ -169,6 +180,11 @@ export class Game {
   }
 
   private update(deltaTime: number): void {
+    // Don't update if transition is active
+    if (this.transition.isActive()) {
+      return;
+    }
+
     // Get controls from gamepad
     const controls = this.gamepad.getControls();
 
@@ -178,9 +194,24 @@ export class Game {
     // Update level
     this.level.update(deltaTime);
 
+    // Update particles
+    this.particles.update(deltaTime);
+
     // Check collectibles
+    const playerPos = this.player.getPosition();
+
+    // Emit particles for collected items
+    this.level.data.collectibles.forEach((collectible) => {
+      if (!collectible.collected) {
+        const distance = playerPos.distanceTo(collectible.position);
+        if (distance < this.player.getRadius() + 0.4) {
+          this.particles.emitCollectEffect(collectible.position, 15);
+        }
+      }
+    });
+
     const scoreGained = this.level.checkCollectibles(
-      this.player.getPosition(),
+      playerPos,
       this.player.getRadius()
     );
 
@@ -189,8 +220,13 @@ export class Game {
       this.updateUI();
     }
 
+    // Check for death (falling off)
+    if (playerPos.y < -50) {
+      this.handleDeath();
+    }
+
     // Check if player reached end
-    const distanceToEnd = this.player.getPosition().distanceTo(this.level.data.endPosition);
+    const distanceToEnd = playerPos.distanceTo(this.level.data.endPosition);
     if (distanceToEnd < 3) {
       this.levelComplete();
     }
@@ -211,17 +247,59 @@ export class Game {
   }
 
   private levelComplete(): void {
-    console.log('Level Complete! Score:', this.player.state.score);
-    // For now, just reset to beginning
-    // In future expansion, this would load the next level
-    this.player.state.position.copy(this.level.data.startPosition);
-    this.player.state.velocity.set(0, 0, 0);
+    // Use star wipe transition
+    this.transition.start('starwipe', 'out', 1000, () => {
+      // Advance to next level
+      this.currentLevel++;
+
+      // If we've completed all levels, loop back to level 1
+      if (this.currentLevel > this.maxLevels) {
+        this.currentLevel = 1;
+      }
+
+      // Clean up old level
+      this.level.cleanup();
+
+      // Create new level
+      this.level = new Level(this.scene, this.currentLevel);
+
+      // Reset player position
+      this.player.state.position.copy(this.level.data.startPosition);
+      this.player.state.velocity.set(0, 0, 0);
+
+      // Update UI
+      this.updateUI();
+
+      // Fade back in
+      setTimeout(() => {
+        this.transition.start('starwipe', 'in', 1000);
+      }, 100);
+    });
+  }
+
+  private handleDeath(): void {
+    // Emit death particles
+    this.particles.emitDeathEffect(this.player.state.position);
+
+    // Use fade transition
+    this.transition.start('fade', 'out', 800, () => {
+      // Reset player to start of current level
+      this.player.state.position.copy(this.level.data.startPosition);
+      this.player.state.velocity.set(0, 0, 0);
+
+      // Fade back in
+      setTimeout(() => {
+        this.transition.start('fade', 'in', 800);
+      }, 200);
+    });
   }
 
   public cleanup(): void {
     this.running = false;
     window.removeEventListener('resize', this.handleResize.bind(this));
     this.level.cleanup();
+    this.particles.cleanup();
+    this.transition.cleanup();
     this.renderer.dispose();
     if (this.controlCanvas.parentNode) {
       this.controlCanvas.parentNode.removeChild(this.controlCanvas);

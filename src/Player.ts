@@ -1,21 +1,28 @@
 import * as THREE from 'three';
 import { PlayerState, Controls } from './types';
 import { Physics } from './Physics';
+import { ParticleSystem } from './ParticleSystem';
 
 export class Player {
   public mesh: THREE.Group;
   public state: PlayerState;
   private physics: Physics;
+  private particles: ParticleSystem;
   private moveSpeed: number = 8;
   private jumpForce: number = 12;
+  private boosterThrust: number = 15;
   private radius: number = 0.5;
   private height: number = 1.5;
   private camera: THREE.Camera;
   private cameraOffset: THREE.Vector3;
+  private leftFootFlame!: THREE.Mesh;
+  private rightFootFlame!: THREE.Mesh;
+  private lastJumpState: boolean = false;
 
-  constructor(physics: Physics, camera: THREE.Camera) {
+  constructor(physics: Physics, camera: THREE.Camera, particles: ParticleSystem) {
     this.physics = physics;
     this.camera = camera;
+    this.particles = particles;
     this.cameraOffset = new THREE.Vector3(0, 8, 12);
 
     this.state = {
@@ -24,6 +31,7 @@ export class Player {
       isJumping: false,
       canDoubleJump: true,
       doubleJumpUsed: false,
+      isBoosterActive: false,
       health: 100,
       score: 0,
     };
@@ -124,6 +132,24 @@ export class Player {
     rightLeg.castShadow = true;
     group.add(rightLeg);
 
+    // Rocket booster flames (hidden by default)
+    const flameGeometry = new THREE.ConeGeometry(0.15, 0.5, 8);
+    const flameMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff6600,
+      transparent: true,
+      opacity: 0,
+    });
+
+    this.leftFootFlame = new THREE.Mesh(flameGeometry, flameMaterial.clone());
+    this.leftFootFlame.position.set(-0.25, -this.radius - 0.9, 0);
+    this.leftFootFlame.rotation.x = Math.PI;
+    group.add(this.leftFootFlame);
+
+    this.rightFootFlame = new THREE.Mesh(flameGeometry, flameMaterial.clone());
+    this.rightFootFlame.position.set(0.25, -this.radius - 0.9, 0);
+    this.rightFootFlame.rotation.x = Math.PI;
+    group.add(this.rightFootFlame);
+
     return group;
   }
 
@@ -174,17 +200,51 @@ export class Player {
       this.state.doubleJumpUsed = false;
     }
 
-    // Jump
-    if (controls.jump && !this.state.isJumping && !this.state.doubleJumpUsed) {
+    // Jump (only trigger on new press, not held)
+    if (controls.jump && !this.lastJumpState && !this.state.isJumping) {
       if (collision.grounded) {
         // Normal jump
         this.state.velocity.y = this.jumpForce;
         this.state.isJumping = true;
-      } else if (this.state.canDoubleJump && !this.state.doubleJumpUsed) {
-        // Double jump
-        this.state.velocity.y = this.jumpForce;
-        this.state.doubleJumpUsed = true;
       }
+    }
+    this.lastJumpState = controls.jump;
+
+    // Rocket Booster
+    if (controls.booster) {
+      this.state.isBoosterActive = true;
+      // Apply upward thrust while maintaining control
+      this.state.velocity.y += this.boosterThrust * deltaTime;
+
+      // Emit flame particles
+      const leftFootPos = this.state.position.clone();
+      leftFootPos.x -= 0.25;
+      leftFootPos.y -= this.radius - 0.9;
+
+      const rightFootPos = this.state.position.clone();
+      rightFootPos.x += 0.25;
+      rightFootPos.y -= this.radius - 0.9;
+
+      this.particles.emitFlame(leftFootPos, 2);
+      this.particles.emitFlame(rightFootPos, 2);
+      this.particles.emitSmoke(leftFootPos, 1);
+      this.particles.emitSmoke(rightFootPos, 1);
+
+      // Show flame visuals
+      const leftMat = this.leftFootFlame.material as THREE.MeshBasicMaterial;
+      const rightMat = this.rightFootFlame.material as THREE.MeshBasicMaterial;
+      leftMat.opacity = 0.8 + Math.random() * 0.2;
+      rightMat.opacity = 0.8 + Math.random() * 0.2;
+
+      // Animate flame size
+      const flameScale = 1 + Math.sin(Date.now() * 0.02) * 0.3;
+      this.leftFootFlame.scale.set(1, flameScale, 1);
+      this.rightFootFlame.scale.set(1, flameScale, 1);
+    } else {
+      this.state.isBoosterActive = false;
+      // Hide flames
+      (this.leftFootFlame.material as THREE.MeshBasicMaterial).opacity = 0;
+      (this.rightFootFlame.material as THREE.MeshBasicMaterial).opacity = 0;
     }
 
     // Keep within boundaries

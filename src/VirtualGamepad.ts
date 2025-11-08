@@ -8,6 +8,8 @@ export class VirtualGamepad {
   private dpadCenter: { x: number; y: number };
   private dpadRadius: number;
   private jumpButton: { x: number; y: number; radius: number };
+  private lastJumpTapTime: number = 0;
+  private doubleTapWindow: number = 300; // milliseconds
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -18,6 +20,7 @@ export class VirtualGamepad {
       forward: false,
       backward: false,
       jump: false,
+      booster: false,
     };
     this.touches = new Map();
 
@@ -72,7 +75,22 @@ export class VirtualGamepad {
 
       if (jumpDist < this.jumpButton.radius * 1.5) {
         this.touches.set(touch.identifier, { x, y, zone: 'jump' });
-        this.controls.jump = true;
+
+        const now = Date.now();
+        const timeSinceLastTap = now - this.lastJumpTapTime;
+
+        // Check for double-tap
+        if (timeSinceLastTap < this.doubleTapWindow && timeSinceLastTap > 0) {
+          // Double-tap detected - activate booster while held
+          this.controls.booster = true;
+          this.controls.jump = false; // Don't trigger regular jump on second tap
+        } else {
+          // Single tap
+          this.controls.jump = true;
+          this.controls.booster = false;
+        }
+
+        this.lastJumpTapTime = now;
       }
     }
   }
@@ -108,6 +126,7 @@ export class VirtualGamepad {
           this.controls.backward = false;
         } else if (touchData.zone === 'jump') {
           this.controls.jump = false;
+          this.controls.booster = false;
         }
 
         this.touches.delete(touch.identifier);
@@ -195,18 +214,29 @@ export class VirtualGamepad {
 
     // Draw jump button
     this.ctx.save();
-    this.ctx.globalAlpha = this.controls.jump ? 0.6 : 0.3;
-    this.ctx.fillStyle = '#00ff88';
+
+    // Add glow effect for booster mode
+    if (this.controls.booster) {
+      this.ctx.shadowBlur = 20;
+      this.ctx.shadowColor = '#ff6600';
+      this.ctx.globalAlpha = 0.8;
+      this.ctx.fillStyle = '#ff6600';
+    } else {
+      this.ctx.globalAlpha = this.controls.jump ? 0.6 : 0.3;
+      this.ctx.fillStyle = '#00ff88';
+    }
+
     this.ctx.beginPath();
     this.ctx.arc(this.jumpButton.x, this.jumpButton.y, this.jumpButton.radius, 0, Math.PI * 2);
     this.ctx.fill();
 
+    this.ctx.shadowBlur = 0;
     this.ctx.globalAlpha = 1;
     this.ctx.fillStyle = '#ffffff';
     this.ctx.font = 'bold 24px Arial';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText('A', this.jumpButton.x, this.jumpButton.y);
+    this.ctx.fillText(this.controls.booster ? '🚀' : 'A', this.jumpButton.x, this.jumpButton.y);
     this.ctx.restore();
 
     // Highlight active directions
