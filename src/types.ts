@@ -44,7 +44,7 @@ export interface Controls {
   backward: boolean;
 }
 
-export type CollectibleType = 'orb' | 'coin' | 'ring';
+export type CollectibleType = 'orb' | 'coin' | 'ring' | 'tnt' | 'star';
 
 export interface Collectible {
   mesh: THREE.Mesh;

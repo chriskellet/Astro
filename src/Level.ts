@@ -76,7 +76,7 @@ export class Level {
       collectibles,
       enemies,
       chickenBot,
-      startPosition: new THREE.Vector3(0, 5, 0),
+      startPosition: new THREE.Vector3(0, 6, 0),
       endPosition: new THREE.Vector3(35, 10, 5),
     };
   }
@@ -122,7 +122,7 @@ export class Level {
     let material: THREE.MeshStandardMaterial;
 
     if (this.collectibleType === 'coin') {
-      // Create a coin shape (cylinder)
+      // Create a coin shape (cylinder) - rotate to stand upright
       geometry = new THREE.CylinderGeometry(0.35, 0.35, 0.1, 32);
       material = new THREE.MeshStandardMaterial({
         color: 0xFFD700,
@@ -141,6 +141,50 @@ export class Level {
         metalness: 1.0,
         roughness: 0.1,
       });
+    } else if (this.collectibleType === 'tnt') {
+      // Create a TNT block (cube with red color)
+      geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+      material = new THREE.MeshStandardMaterial({
+        color: 0xFF0000,
+        emissive: 0x8B0000,
+        emissiveIntensity: 0.4,
+        metalness: 0.3,
+        roughness: 0.7,
+      });
+    } else if (this.collectibleType === 'star') {
+      // Create a star shape using ExtrudeGeometry
+      const starShape = new THREE.Shape();
+      const outerRadius = 0.4;
+      const innerRadius = 0.2;
+      const points = 5;
+
+      for (let i = 0; i < points * 2; i++) {
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const angle = (i * Math.PI) / points;
+        const px = Math.cos(angle) * radius;
+        const py = Math.sin(angle) * radius;
+        if (i === 0) {
+          starShape.moveTo(px, py);
+        } else {
+          starShape.lineTo(px, py);
+        }
+      }
+      starShape.closePath();
+
+      geometry = new THREE.ExtrudeGeometry(starShape, {
+        depth: 0.1,
+        bevelEnabled: true,
+        bevelThickness: 0.02,
+        bevelSize: 0.02,
+        bevelSegments: 3,
+      });
+      material = new THREE.MeshStandardMaterial({
+        color: 0xFFFF00,
+        emissive: 0xFFDD00,
+        emissiveIntensity: 0.8,
+        metalness: 0.9,
+        roughness: 0.1,
+      });
     } else {
       // Default orb (octahedron)
       geometry = new THREE.OctahedronGeometry(0.4);
@@ -156,6 +200,11 @@ export class Level {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
+
+    // Rotate coins to stand upright initially
+    if (this.collectibleType === 'coin') {
+      mesh.rotation.x = Math.PI / 2;
+    }
 
     this.scene.add(mesh);
 
@@ -174,11 +223,19 @@ export class Level {
       if (!collectible.collected) {
         // Type-specific rotation animations
         if (collectible.type === 'coin') {
-          // Coins spin around Y axis (standing upright)
-          collectible.mesh.rotation.y += deltaTime * 3;
+          // Coins spin around Z axis (since we rotated them to stand upright)
+          collectible.mesh.rotation.z += deltaTime * 3;
         } else if (collectible.type === 'ring') {
-          // Rings spin around Z axis (like Sonic rings)
-          collectible.mesh.rotation.z += deltaTime * 4;
+          // Rings spin around Y axis (perpendicular to ring plane)
+          collectible.mesh.rotation.y += deltaTime * 4;
+        } else if (collectible.type === 'tnt') {
+          // TNT blocks rotate on multiple axes
+          collectible.mesh.rotation.y += deltaTime * 2;
+          collectible.mesh.rotation.x += deltaTime * 1.5;
+        } else if (collectible.type === 'star') {
+          // Stars rotate around Z axis (like Mario stars)
+          collectible.mesh.rotation.z += deltaTime * 3;
+          collectible.mesh.rotation.y += deltaTime * 2;
         } else {
           // Orbs rotate on multiple axes
           collectible.mesh.rotation.y += deltaTime * 2;
