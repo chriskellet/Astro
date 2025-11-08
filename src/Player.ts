@@ -1,0 +1,223 @@
+import * as THREE from 'three';
+import { PlayerState, Controls } from './types';
+import { Physics } from './Physics';
+
+export class Player {
+  public mesh: THREE.Group;
+  public state: PlayerState;
+  private physics: Physics;
+  private moveSpeed: number = 8;
+  private jumpForce: number = 12;
+  private radius: number = 0.5;
+  private height: number = 1.5;
+  private camera: THREE.Camera;
+  private cameraOffset: THREE.Vector3;
+
+  constructor(physics: Physics, camera: THREE.Camera) {
+    this.physics = physics;
+    this.camera = camera;
+    this.cameraOffset = new THREE.Vector3(0, 8, 12);
+
+    this.state = {
+      position: new THREE.Vector3(0, 5, 0),
+      velocity: new THREE.Vector3(0, 0, 0),
+      isJumping: false,
+      canDoubleJump: true,
+      doubleJumpUsed: false,
+      health: 100,
+      score: 0,
+    };
+
+    this.mesh = this.createMesh();
+    this.mesh.position.copy(this.state.position);
+  }
+
+  private createMesh(): THREE.Group {
+    const group = new THREE.Group();
+
+    // Body (sphere)
+    const bodyGeometry = new THREE.SphereGeometry(this.radius, 32, 32);
+    const bodyMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      metalness: 0.3,
+      roughness: 0.4,
+    });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 0;
+    body.castShadow = true;
+    group.add(body);
+
+    // Head (smaller sphere on top)
+    const headGeometry = new THREE.SphereGeometry(this.radius * 0.6, 32, 32);
+    const headMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      metalness: 0.2,
+      roughness: 0.3,
+    });
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+    head.position.y = this.radius * 1.2;
+    head.castShadow = true;
+    group.add(head);
+
+    // Eyes
+    const eyeGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+    const eyeMaterial = new THREE.MeshStandardMaterial({
+      color: 0x000000,
+      emissive: 0x00ffff,
+      emissiveIntensity: 0.5,
+    });
+
+    const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    leftEye.position.set(-0.15, this.radius * 1.3, this.radius * 0.5);
+    group.add(leftEye);
+
+    const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+    rightEye.position.set(0.15, this.radius * 1.3, this.radius * 0.5);
+    group.add(rightEye);
+
+    // Blue accent (PlayStation reference)
+    const accentGeometry = new THREE.BoxGeometry(0.6, 0.15, 0.15);
+    const accentMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0066ff,
+      emissive: 0x0066ff,
+      emissiveIntensity: 0.3,
+    });
+    const accent = new THREE.Mesh(accentGeometry, accentMaterial);
+    accent.position.y = 0;
+    group.add(accent);
+
+    // Arms
+    const armGeometry = new THREE.CapsuleGeometry(0.12, 0.5, 8, 16);
+    const armMaterial = new THREE.MeshStandardMaterial({
+      color: 0xcccccc,
+      metalness: 0.4,
+      roughness: 0.3,
+    });
+
+    const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+    leftArm.position.set(-0.5, 0, 0);
+    leftArm.rotation.z = Math.PI / 6;
+    leftArm.castShadow = true;
+    group.add(leftArm);
+
+    const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+    rightArm.position.set(0.5, 0, 0);
+    rightArm.rotation.z = -Math.PI / 6;
+    rightArm.castShadow = true;
+    group.add(rightArm);
+
+    // Legs
+    const legGeometry = new THREE.CapsuleGeometry(0.15, 0.6, 8, 16);
+    const legMaterial = new THREE.MeshStandardMaterial({
+      color: 0xaaaaaa,
+      metalness: 0.5,
+      roughness: 0.2,
+    });
+
+    const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+    leftLeg.position.set(-0.25, -this.radius - 0.3, 0);
+    leftLeg.castShadow = true;
+    group.add(leftLeg);
+
+    const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+    rightLeg.position.set(0.25, -this.radius - 0.3, 0);
+    rightLeg.castShadow = true;
+    group.add(rightLeg);
+
+    return group;
+  }
+
+  public update(controls: Controls, deltaTime: number, platforms: any[]): void {
+    // Apply movement
+    const moveVector = new THREE.Vector3();
+
+    if (controls.left) moveVector.x -= 1;
+    if (controls.right) moveVector.x += 1;
+    if (controls.forward) moveVector.z -= 1;
+    if (controls.backward) moveVector.z += 1;
+
+    if (moveVector.length() > 0) {
+      moveVector.normalize();
+      this.state.velocity.x = moveVector.x * this.moveSpeed;
+      this.state.velocity.z = moveVector.z * this.moveSpeed;
+
+      // Rotate player to face movement direction
+      const angle = Math.atan2(moveVector.x, moveVector.z);
+      this.mesh.rotation.y = angle;
+    } else {
+      // Apply friction
+      this.state.velocity.x *= 0.85;
+      this.state.velocity.z *= 0.85;
+    }
+
+    // Apply gravity
+    this.physics.applyGravity(this.state.velocity, deltaTime);
+
+    // Update position
+    this.state.position.x += this.state.velocity.x * deltaTime;
+    this.state.position.y += this.state.velocity.y * deltaTime;
+    this.state.position.z += this.state.velocity.z * deltaTime;
+
+    // Check collisions
+    const collision = this.physics.checkPlatformCollision(
+      this.state.position,
+      this.state.velocity,
+      this.radius,
+      this.height,
+      platforms
+    );
+
+    this.state.isJumping = !collision.grounded;
+
+    // Reset double jump when grounded
+    if (collision.grounded) {
+      this.state.doubleJumpUsed = false;
+    }
+
+    // Jump
+    if (controls.jump && !this.state.isJumping && !this.state.doubleJumpUsed) {
+      if (collision.grounded) {
+        // Normal jump
+        this.state.velocity.y = this.jumpForce;
+        this.state.isJumping = true;
+      } else if (this.state.canDoubleJump && !this.state.doubleJumpUsed) {
+        // Double jump
+        this.state.velocity.y = this.jumpForce;
+        this.state.doubleJumpUsed = true;
+      }
+    }
+
+    // Keep within boundaries
+    this.physics.checkBoundary(this.state.position, 50);
+
+    // Update mesh position
+    this.mesh.position.copy(this.state.position);
+
+    // Simple animation - bob when moving
+    if (moveVector.length() > 0) {
+      const bobAmount = Math.sin(Date.now() * 0.01) * 0.1;
+      this.mesh.position.y += bobAmount;
+    }
+
+    // Update camera
+    this.updateCamera();
+  }
+
+  private updateCamera(): void {
+    const targetPosition = this.state.position.clone().add(this.cameraOffset);
+    this.camera.position.lerp(targetPosition, 0.1);
+    this.camera.lookAt(this.state.position);
+  }
+
+  public addScore(points: number): void {
+    this.state.score += points;
+  }
+
+  public getPosition(): THREE.Vector3 {
+    return this.state.position.clone();
+  }
+
+  public getRadius(): number {
+    return this.radius;
+  }
+}
