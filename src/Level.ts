@@ -97,7 +97,7 @@ export class Level {
       collectibles,
       enemies,
       chickenBot,
-      startPosition: new THREE.Vector3(0, 6, 0),
+      startPosition: new THREE.Vector3(0, 7, 0),
       endPosition: new THREE.Vector3(148, 14, 2),
     };
   }
@@ -162,7 +162,7 @@ export class Level {
       collectibles,
       enemies,
       chickenBot,
-      startPosition: new THREE.Vector3(0, 6, 0),
+      startPosition: new THREE.Vector3(0, 7, 0),
       endPosition: new THREE.Vector3(164, 19, 2),
     };
   }
@@ -228,7 +228,7 @@ export class Level {
       collectibles,
       enemies,
       chickenBot,
-      startPosition: new THREE.Vector3(0, 6, 0),
+      startPosition: new THREE.Vector3(0, 7, 0),
       endPosition: new THREE.Vector3(162, 33, 0),
     };
   }
@@ -299,7 +299,7 @@ export class Level {
       collectibles,
       enemies,
       chickenBot,
-      startPosition: new THREE.Vector3(0, 6, 0),
+      startPosition: new THREE.Vector3(0, 7, 0),
       endPosition: new THREE.Vector3(152, 70, 2),
     };
   }
@@ -378,7 +378,7 @@ export class Level {
       collectibles,
       enemies,
       chickenBot,
-      startPosition: new THREE.Vector3(0, 6, 0),
+      startPosition: new THREE.Vector3(0, 7, 0),
       endPosition: new THREE.Vector3(189, 69, 0),
     };
   }
