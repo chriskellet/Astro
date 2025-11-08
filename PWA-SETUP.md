@@ -25,7 +25,39 @@ This document explains the Progressive Web App (PWA) implementation for Astrobot
 ```
 
 ### 4. Service Worker Registration
-Automatic registration in `main.ts` with update detection
+Automatic registration in `main.ts` with:
+- Update detection every 60 seconds
+- User notification when new version is available
+- One-click update button
+
+### 5. Cache Versioning System
+- **Version-based cache names** prevent old versions from persisting
+- **Network-first for HTML** ensures latest content when online
+- **Automatic cache cleanup** removes outdated caches on activation
+- **User notifications** prompt for updates with a friendly banner
+
+## IMPORTANT: Deploying Updates
+
+**Every time you deploy a new version**, you MUST update the version number in the service worker:
+
+1. Open `public/sw.js`
+2. Update the `VERSION` constant at the top:
+   ```javascript
+   const VERSION = '1.0.2'; // Increment this!
+   ```
+3. Build and deploy as usual
+
+**Why this matters:**
+- The version number is used to create cache names
+- Changing the version forces browsers to download fresh files
+- Old caches are automatically deleted
+- Without updating the version, users may get stuck on old versions
+
+**Recommended versioning:**
+- Use semantic versioning: `MAJOR.MINOR.PATCH`
+- Increment PATCH for bug fixes (1.0.1 → 1.0.2)
+- Increment MINOR for new features (1.0.2 → 1.1.0)
+- Increment MAJOR for breaking changes (1.1.0 → 2.0.0)
 
 ## Installation Instructions
 
@@ -197,6 +229,33 @@ stats.update();
 - Play online first (caches assets)
 - Check service worker is active: Chrome DevTools > Application > Service Workers
 - Verify cache contains game files
+
+### Stuck on Old Version / Changes Not Showing:
+
+**Quick Fix:**
+1. Open browser DevTools (F12)
+2. Go to Application > Service Workers
+3. Click "Unregister" on the service worker
+4. Go to Application > Cache Storage
+5. Delete all "astrobot" caches
+6. Hard refresh the page (Ctrl+Shift+R or Cmd+Shift+R)
+
+**iOS-specific:**
+1. Remove the app from home screen
+2. Go to Safari settings > Clear History and Website Data
+3. Re-add the app to home screen
+
+**Prevention:**
+- Always increment the VERSION number in `public/sw.js` before deploying
+- The service worker will automatically update within 1 minute of deployment
+- Users will see an "Update Now" banner when a new version is detected
+
+**How the update system works:**
+1. Every 60 seconds, the app checks for service worker updates
+2. If `public/sw.js` has changed (due to VERSION increment), a new service worker installs
+3. When the new service worker activates, it deletes all old caches
+4. A notification banner appears offering to reload the page
+5. On reload, users get the latest version with fresh caches
 
 ## Resources
 
