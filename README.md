@@ -4,11 +4,13 @@ A mobile-optimized 3D platformer inspired by Astrobot, built for iPad and iPhone
 
 ## Features
 
+- **PWA Support**: Install on iOS home screen and play offline! 📱
 - **3D Graphics**: Built with Three.js for smooth 3D gameplay
 - **Touch Controls**: Virtual gamepad with D-pad and jump button
 - **Physics**: Realistic jumping, gravity, and collision detection
 - **Double Jump**: Master the double jump mechanic to reach higher platforms
 - **Collectibles**: Gather coins and stars to increase your score
+- **Offline Mode**: Play anytime, anywhere with service worker caching
 - **Responsive**: Optimized for both iPad and iPhone screens
 - **GitHub Pages**: Deployed and playable online
 
@@ -16,6 +18,24 @@ A mobile-optimized 3D platformer inspired by Astrobot, built for iPad and iPhone
 
 - **Left D-pad**: Move Astrobot in 8 directions
 - **Right A Button**: Jump (tap twice for double jump)
+
+## Installing on iOS
+
+This game is a Progressive Web App (PWA) and can be installed on your iOS device:
+
+1. Open the game in Safari on your iPhone or iPad
+2. Tap the Share button (square with arrow pointing up)
+3. Scroll down and tap "Add to Home Screen"
+4. Tap "Add" to confirm
+5. Launch from your home screen for a fullscreen, app-like experience!
+
+**Benefits of Installing:**
+- ✅ Fullscreen gameplay (no browser UI)
+- ✅ Play offline after first visit
+- ✅ Faster loading times
+- ✅ App icon on your home screen
+
+See [PWA-SETUP.md](./PWA-SETUP.md) for detailed PWA documentation and performance information.
 
 ## Development
 

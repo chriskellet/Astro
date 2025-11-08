@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "generate-icons": "echo 'Open generate-icons.html in your browser to create PWA icons'"
   },
   "dependencies": {
     "three": "^0.160.0"
@@ -18,6 +19,7 @@
     "@types/three": "^0.160.0",
     "@vitest/ui": "^1.1.0",
     "jsdom": "^23.0.1",
+    "terser": "^5.44.1",
     "typescript": "^5.3.3",
     "vite": "^5.0.10",
     "vitest": "^1.1.0"
