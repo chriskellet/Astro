@@ -151,154 +151,259 @@ export class BackgroundTheme {
   }
 
   private createSunnyDayBackground(): void {
-    // Sun
-    const sunGeometry = new THREE.SphereGeometry(8, 32, 32);
-    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-    sun.position.set(-80, 50, -100);
-    this.addBackgroundObject(sun);
-
-    // Fluffy clouds at various positions
-    this.createCloud(new THREE.Vector3(-50, 35, -80), 1.2, 0xffffff);
-    this.createCloud(new THREE.Vector3(60, 40, -90), 1.0, 0xf0f0f0);
-    this.createCloud(new THREE.Vector3(-20, 30, -70), 0.8, 0xfafafa);
-    this.createCloud(new THREE.Vector3(100, 38, -110), 1.5, 0xffffff);
-    this.createCloud(new THREE.Vector3(-100, 42, -95), 1.1, 0xf5f5f5);
-
-    // Distant birds (simple triangles)
-    for (let i = 0; i < 5; i++) {
-      const bird = this.createBird();
-      const angle = (i / 5) * Math.PI * 2;
-      bird.position.set(
-        Math.cos(angle) * 60 + Math.random() * 20,
-        35 + Math.random() * 15,
-        -80 - Math.random() * 30
+    // Distant rolling hills (visible on horizon)
+    for (let i = 0; i < 8; i++) {
+      const hill = this.createHill();
+      hill.position.set(
+        -120 + i * 35,
+        -25,
+        -80 - i * 5
       );
-      const speed = 0.5 + Math.random() * 0.5;
-      this.addBackgroundObject(bird, (dt) => {
-        bird.position.x += speed * dt * 5;
-        if (bird.position.x > 120) bird.position.x = -120;
-        bird.rotation.z = Math.sin(Date.now() * 0.003) * 0.2;
+      hill.scale.set(
+        12 + Math.random() * 8,
+        8 + Math.random() * 6,
+        12 + Math.random() * 8
+      );
+      this.addBackgroundObject(hill);
+    }
+
+    // Floating colorful balloons in the distance
+    for (let i = 0; i < 6; i++) {
+      const balloon = this.createBalloon();
+      balloon.position.set(
+        -80 + i * 35,
+        5 + Math.sin(i) * 5,
+        -70 - Math.random() * 30
+      );
+      const bobSpeed = 0.6 + i * 0.15;
+      const bobOffset = i * 1.5;
+      this.addBackgroundObject(balloon, (dt) => {
+        balloon.position.y = 5 + Math.sin(i) * 5 + Math.sin(Date.now() * 0.001 * bobSpeed + bobOffset) * 3;
+        balloon.rotation.y += dt * 0.2;
+      });
+    }
+
+    // Butterflies fluttering at ground level
+    for (let i = 0; i < 8; i++) {
+      const butterfly = this.createButterfly();
+      const angle = (i / 8) * Math.PI * 2;
+      butterfly.position.set(
+        Math.cos(angle) * 50 + Math.random() * 20,
+        -5 + Math.random() * 8,
+        -60 - Math.random() * 30
+      );
+      const speed = 0.3 + Math.random() * 0.4;
+      this.addBackgroundObject(butterfly, (dt) => {
+        butterfly.position.x += speed * dt * 3;
+        butterfly.position.y += Math.sin(Date.now() * 0.004) * dt * 2;
+        if (butterfly.position.x > 100) {
+          butterfly.position.x = -100;
+        }
+        butterfly.rotation.y = Math.sin(Date.now() * 0.005) * 0.3;
       });
     }
   }
 
   private createSunsetBackground(): void {
-    // Setting sun (lower and orange)
-    const sunGeometry = new THREE.SphereGeometry(10, 32, 32);
-    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xff4500 });
-    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-    sun.position.set(70, 20, -100);
-    this.addBackgroundObject(sun);
-
-    // Floating islands in the distance
-    for (let i = 0; i < 4; i++) {
+    // Floating islands at various heights (more visible from above)
+    for (let i = 0; i < 6; i++) {
       const island = this.createFloatingIsland();
       island.position.set(
-        -80 + i * 50,
-        15 + Math.sin(i) * 10,
-        -70 - i * 15
+        -90 + i * 35,
+        -10 + Math.sin(i) * 8,
+        -70 - i * 10
       );
       const bobSpeed = 0.5 + i * 0.2;
       const bobOffset = i * 2;
       this.addBackgroundObject(island, (dt) => {
-        island.position.y = 15 + Math.sin(i) * 10 + Math.sin(Date.now() * 0.001 * bobSpeed + bobOffset) * 2;
+        island.position.y = -10 + Math.sin(i) * 8 + Math.sin(Date.now() * 0.001 * bobSpeed + bobOffset) * 2;
         island.rotation.y += dt * 0.1;
       });
     }
 
-    // Sunset clouds (orange-tinted)
-    this.createCloud(new THREE.Vector3(-40, 25, -75), 1.3, 0xffb347);
-    this.createCloud(new THREE.Vector3(50, 30, -85), 1.1, 0xff9a56);
-    this.createCloud(new THREE.Vector3(0, 22, -95), 1.5, 0xffa07a);
+    // Glowing lanterns floating in the distance
+    for (let i = 0; i < 10; i++) {
+      const lantern = this.createLantern();
+      lantern.position.set(
+        (Math.random() - 0.5) * 180,
+        -5 + Math.random() * 15,
+        -60 - Math.random() * 50
+      );
+      const floatSpeed = 0.3 + Math.random() * 0.4;
+      const driftSpeed = (Math.random() - 0.5) * 2;
+      this.addBackgroundObject(lantern, (dt) => {
+        lantern.position.y += floatSpeed * dt * 0.5;
+        lantern.position.x += driftSpeed * dt;
+        if (lantern.position.y > 20) {
+          lantern.position.y = -15;
+        }
+        // Gentle pulsing glow
+        const scale = 1.0 + Math.sin(Date.now() * 0.002) * 0.1;
+        lantern.scale.set(scale, scale, scale);
+      });
+    }
+
+    // Distant water/ocean floor plane with waves
+    const waterGeometry = new THREE.PlaneGeometry(300, 200, 20, 20);
+    const waterMaterial = new THREE.MeshBasicMaterial({
+      color: 0x3a6ea5,
+      transparent: true,
+      opacity: 0.4,
+    });
+    const water = new THREE.Mesh(waterGeometry, waterMaterial);
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(0, -30, -100);
+    this.addBackgroundObject(water);
   }
 
   private createMountainBackground(): void {
-    // Distant mountain peaks
-    for (let i = 0; i < 6; i++) {
+    // Large distant mountain peaks on the horizon
+    for (let i = 0; i < 8; i++) {
       const mountain = this.createMountain();
       mountain.position.set(
-        -100 + i * 40,
-        -20,
-        -80 - i * 10
+        -120 + i * 35,
+        -30,
+        -90 - i * 8
       );
       mountain.scale.set(
-        15 + Math.random() * 10,
-        20 + Math.random() * 15,
-        15 + Math.random() * 10
+        18 + Math.random() * 12,
+        30 + Math.random() * 20,
+        18 + Math.random() * 12
       );
       this.addBackgroundObject(mountain);
     }
 
-    // Cloud layer (like we're above the clouds)
-    for (let i = 0; i < 8; i++) {
-      const cloud = new THREE.Mesh(
-        new THREE.PlaneGeometry(30, 20),
-        new THREE.MeshBasicMaterial({
-          color: 0xffffff,
-          transparent: true,
-          opacity: 0.6,
-          side: THREE.DoubleSide,
-        })
+    // Rocky outcrops closer and lower
+    for (let i = 0; i < 12; i++) {
+      const rock = this.createRock();
+      rock.position.set(
+        (Math.random() - 0.5) * 200,
+        -20 - Math.random() * 15,
+        -50 - Math.random() * 60
       );
-      cloud.rotation.x = -Math.PI / 2;
-      cloud.position.set(
-        -120 + i * 35,
-        -15,
+      rock.scale.setScalar(3 + Math.random() * 5);
+      this.addBackgroundObject(rock);
+    }
+
+    // Flying eagles/birds at various heights
+    for (let i = 0; i < 6; i++) {
+      const bird = this.createBird();
+      bird.position.set(
+        -80 + i * 30,
+        -5 + Math.random() * 20,
         -60 - Math.random() * 40
       );
-      const driftSpeed = 0.3 + Math.random() * 0.3;
-      this.addBackgroundObject(cloud, (dt) => {
-        cloud.position.x += driftSpeed * dt * 2;
-        if (cloud.position.x > 150) cloud.position.x = -150;
+      bird.scale.setScalar(2);
+      const speed = 0.4 + Math.random() * 0.3;
+      const circleRadius = 15 + Math.random() * 10;
+      const angleOffset = (i / 6) * Math.PI * 2;
+      this.addBackgroundObject(bird, (_dt) => {
+        const time = Date.now() * 0.0003 * speed;
+        bird.position.x = Math.cos(time + angleOffset) * circleRadius + (i * 30 - 80);
+        bird.position.z = Math.sin(time + angleOffset) * circleRadius + (-60 - i * 5);
+        bird.rotation.y = time + angleOffset;
       });
     }
 
-    // High altitude clouds (small puffs)
-    this.createCloud(new THREE.Vector3(-60, 45, -90), 0.8, 0xffffff);
-    this.createCloud(new THREE.Vector3(70, 50, -100), 0.9, 0xf8f8f8);
-    this.createCloud(new THREE.Vector3(0, 48, -85), 0.7, 0xfafafa);
+    // Snow/ice crystals floating around
+    for (let i = 0; i < 15; i++) {
+      const crystal = this.createCrystal();
+      crystal.position.set(
+        (Math.random() - 0.5) * 150,
+        -10 + Math.random() * 25,
+        -50 - Math.random() * 50
+      );
+      const rotSpeed = 0.5 + Math.random();
+      this.addBackgroundObject(crystal, (dt) => {
+        crystal.rotation.x += dt * rotSpeed;
+        crystal.rotation.y += dt * rotSpeed * 0.7;
+        crystal.position.y += Math.sin(Date.now() * 0.001) * dt * 0.5;
+      });
+    }
   }
 
   private createTwilightBackground(): void {
-    // Moon
-    const moonGeometry = new THREE.SphereGeometry(6, 32, 32);
-    const moonMaterial = new THREE.MeshBasicMaterial({ color: 0xe0e0e0 });
-    const moon = new THREE.Mesh(moonGeometry, moonMaterial);
-    moon.position.set(60, 45, -100);
-    this.addBackgroundObject(moon);
-
-    // Stars (lots of them)
-    const starGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-    const starMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-
-    for (let i = 0; i < 100; i++) {
-      const star = new THREE.Mesh(starGeometry, starMaterial);
-      star.position.set(
-        (Math.random() - 0.5) * 200,
-        Math.random() * 60 + 20,
-        -60 - Math.random() * 80
+    // Glowing mushrooms scattered on the ground
+    for (let i = 0; i < 20; i++) {
+      const mushroom = this.createGlowingMushroom();
+      mushroom.position.set(
+        (Math.random() - 0.5) * 180,
+        -25 + Math.random() * 5,
+        -55 - Math.random() * 55
       );
-      const twinkleSpeed = 1 + Math.random() * 2;
-      const twinkleOffset = Math.random() * Math.PI * 2;
-      this.addBackgroundObject(star, (_dt) => {
-        const scale = 0.8 + Math.sin(Date.now() * 0.001 * twinkleSpeed + twinkleOffset) * 0.2;
-        star.scale.set(scale, scale, scale);
+      const glowSpeed = 0.5 + Math.random() * 1.5;
+      const glowOffset = Math.random() * Math.PI * 2;
+      this.addBackgroundObject(mushroom, (_dt) => {
+        const intensity = 0.7 + Math.sin(Date.now() * 0.001 * glowSpeed + glowOffset) * 0.3;
+        mushroom.scale.set(intensity, intensity, intensity);
       });
     }
 
-    // Dark clouds
-    this.createCloud(new THREE.Vector3(-50, 25, -70), 1.2, 0x2a2a4e);
-    this.createCloud(new THREE.Vector3(40, 30, -80), 1.4, 0x3a3a5e);
-    this.createCloud(new THREE.Vector3(-10, 28, -75), 1.0, 0x2a2a4e);
+    // Fireflies floating around at various heights
+    for (let i = 0; i < 30; i++) {
+      const firefly = this.createFirefly();
+      firefly.position.set(
+        (Math.random() - 0.5) * 150,
+        -15 + Math.random() * 30,
+        -50 - Math.random() * 60
+      );
+      const moveSpeed = 0.3 + Math.random() * 0.4;
+      const angleOffset = Math.random() * Math.PI * 2;
+      const twinkleSpeed = 2 + Math.random() * 3;
+      const twinkleOffset = Math.random() * Math.PI * 2;
+      this.addBackgroundObject(firefly, (dt) => {
+        const time = Date.now() * 0.001 * moveSpeed;
+        firefly.position.x += Math.sin(time + angleOffset) * dt * 2;
+        firefly.position.y += Math.cos(time + angleOffset * 2) * dt * 1.5;
+        // Twinkling effect
+        const brightness = 0.5 + Math.sin(Date.now() * 0.001 * twinkleSpeed + twinkleOffset) * 0.5;
+        firefly.scale.setScalar(brightness);
+      });
+    }
+
+    // Dark silhouettes of trees in the distance
+    for (let i = 0; i < 12; i++) {
+      const tree = this.createTree();
+      tree.position.set(
+        -110 + i * 20,
+        -25,
+        -70 - Math.random() * 30
+      );
+      tree.scale.set(
+        4 + Math.random() * 3,
+        10 + Math.random() * 8,
+        4 + Math.random() * 3
+      );
+      this.addBackgroundObject(tree);
+    }
+
+    // Bats flying in circular patterns
+    for (let i = 0; i < 8; i++) {
+      const bat = this.createBat();
+      bat.position.set(
+        -60 + i * 20,
+        0 + Math.random() * 10,
+        -60 - Math.random() * 30
+      );
+      const speed = 0.6 + Math.random() * 0.4;
+      const radius = 10 + Math.random() * 8;
+      const angleOffset = (i / 8) * Math.PI * 2;
+      this.addBackgroundObject(bat, (_dt) => {
+        const time = Date.now() * 0.001 * speed;
+        bat.position.x = Math.cos(time + angleOffset) * radius + (i * 20 - 60);
+        bat.position.y = Math.sin(time * 2 + angleOffset) * 3 + (5 + i);
+        bat.rotation.y = time + angleOffset + Math.PI / 2;
+      });
+    }
   }
 
   private createSpaceBackground(): void {
-    // Distant planets
+    // Large planets visible on the horizon/below
     const planets = [
-      { color: 0xff6b4a, size: 12, position: new THREE.Vector3(-70, 30, -120) },
-      { color: 0x4a9eff, size: 8, position: new THREE.Vector3(80, 50, -130) },
-      { color: 0xffcc66, size: 6, position: new THREE.Vector3(40, 40, -110) },
+      { color: 0xff6b4a, size: 25, position: new THREE.Vector3(-70, -20, -120) },
+      { color: 0x4a9eff, size: 18, position: new THREE.Vector3(80, -15, -130) },
+      { color: 0xffcc66, size: 15, position: new THREE.Vector3(40, -10, -100) },
+      { color: 0x9966ff, size: 20, position: new THREE.Vector3(-40, -25, -110) },
     ];
 
     planets.forEach((planetData) => {
@@ -311,108 +416,73 @@ export class BackgroundTheme {
       });
     });
 
-    // Nebula effect (colored semi-transparent planes)
-    const nebulae = [
-      { color: 0x8844ff, position: new THREE.Vector3(-50, 35, -90), size: [40, 30] },
-      { color: 0xff44aa, position: new THREE.Vector3(60, 40, -100), size: [35, 25] },
-      { color: 0x44aaff, position: new THREE.Vector3(0, 30, -85), size: [45, 35] },
-    ];
-
-    nebulae.forEach((nebula) => {
-      const nebulaGeometry = new THREE.PlaneGeometry(nebula.size[0], nebula.size[1]);
-      const nebulaMaterial = new THREE.MeshBasicMaterial({
-        color: nebula.color,
-        transparent: true,
-        opacity: 0.15,
-        side: THREE.DoubleSide,
-      });
-      const nebulaMesh = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
-      nebulaMesh.position.copy(nebula.position);
-      this.addBackgroundObject(nebulaMesh, (dt) => {
-        nebulaMesh.rotation.z += dt * 0.1;
-      });
-    });
-
-    // Stars (even more than twilight)
-    const starGeometry = new THREE.SphereGeometry(0.4, 8, 8);
-    const starColors = [0xffffff, 0xaaccff, 0xffccaa, 0xccffff];
-
-    for (let i = 0; i < 150; i++) {
-      const starMaterial = new THREE.MeshBasicMaterial({
-        color: starColors[Math.floor(Math.random() * starColors.length)],
-      });
-      const star = new THREE.Mesh(starGeometry, starMaterial);
-      star.position.set(
-        (Math.random() - 0.5) * 250,
-        Math.random() * 80 + 10,
-        -70 - Math.random() * 100
-      );
-      const twinkleSpeed = 0.8 + Math.random() * 1.5;
-      const twinkleOffset = Math.random() * Math.PI * 2;
-      this.addBackgroundObject(star, (_dt) => {
-        const scale = 0.7 + Math.sin(Date.now() * 0.001 * twinkleSpeed + twinkleOffset) * 0.3;
-        star.scale.set(scale, scale, scale);
-      });
-    }
-
-    // Asteroids floating by
-    for (let i = 0; i < 3; i++) {
+    // Asteroids floating at various heights
+    for (let i = 0; i < 15; i++) {
       const asteroid = this.createAsteroid();
       asteroid.position.set(
-        -100 + i * 80,
-        20 + Math.random() * 30,
-        -70 - Math.random() * 30
+        (Math.random() - 0.5) * 200,
+        -15 + Math.random() * 30,
+        -60 - Math.random() * 60
       );
-      const rotSpeed = 0.5 + Math.random();
+      const rotSpeed = 0.3 + Math.random() * 0.7;
+      const driftSpeed = (Math.random() - 0.5) * 3;
       this.addBackgroundObject(asteroid, (dt) => {
         asteroid.rotation.x += dt * rotSpeed;
         asteroid.rotation.y += dt * rotSpeed * 0.7;
-        asteroid.position.x += dt * 5;
-        if (asteroid.position.x > 150) {
-          asteroid.position.x = -150;
-        }
+        asteroid.position.x += driftSpeed * dt;
+        if (asteroid.position.x > 120) asteroid.position.x = -120;
+        if (asteroid.position.x < -120) asteroid.position.x = 120;
       });
     }
+
+    // Space crystals/minerals floating
+    for (let i = 0; i < 20; i++) {
+      const crystal = this.createSpaceCrystal();
+      crystal.position.set(
+        (Math.random() - 0.5) * 180,
+        -10 + Math.random() * 25,
+        -50 - Math.random() * 70
+      );
+      const rotSpeed = 0.4 + Math.random() * 0.6;
+      const floatSpeed = 0.2 + Math.random() * 0.3;
+      const floatOffset = Math.random() * Math.PI * 2;
+      this.addBackgroundObject(crystal, (dt) => {
+        crystal.rotation.x += dt * rotSpeed;
+        crystal.rotation.z += dt * rotSpeed * 0.5;
+        crystal.position.y += Math.sin(Date.now() * 0.001 * floatSpeed + floatOffset) * dt * 0.5;
+      });
+    }
+
+    // Glowing space debris
+    for (let i = 0; i < 12; i++) {
+      const debris = this.createSpaceDebris();
+      debris.position.set(
+        (Math.random() - 0.5) * 160,
+        -12 + Math.random() * 24,
+        -55 - Math.random() * 55
+      );
+      const glowSpeed = 0.8 + Math.random() * 1.2;
+      const glowOffset = Math.random() * Math.PI * 2;
+      const spinSpeed = 0.5 + Math.random() * 0.8;
+      this.addBackgroundObject(debris, (dt) => {
+        debris.rotation.y += dt * spinSpeed;
+        debris.rotation.x += dt * spinSpeed * 0.6;
+        // Pulsing glow effect
+        const glow = 0.8 + Math.sin(Date.now() * 0.001 * glowSpeed + glowOffset) * 0.2;
+        debris.scale.setScalar(glow);
+      });
+    }
+
+    // Distant space station or satellite
+    const spaceStation = this.createSpaceStation();
+    spaceStation.position.set(60, 0, -95);
+    this.addBackgroundObject(spaceStation, (dt) => {
+      spaceStation.rotation.y += dt * 0.3;
+      spaceStation.position.y = Math.sin(Date.now() * 0.0005) * 5;
+    });
   }
 
   // Helper methods to create various objects
-  private createCloud(position: THREE.Vector3, scale: number, color: number): void {
-    const cloudGroup = new THREE.Group();
-
-    // Cloud made of spheres
-    const sphereGeometry = new THREE.SphereGeometry(1, 16, 16);
-    const cloudMaterial = new THREE.MeshBasicMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.8,
-    });
-
-    const positions = [
-      [0, 0, 0, 3],
-      [2, 0.5, 0, 2.5],
-      [-2, 0.5, 0, 2.5],
-      [1, 1, 0, 2],
-      [-1, 1, 0, 2],
-    ];
-
-    positions.forEach(([x, y, z, s]) => {
-      const sphere = new THREE.Mesh(sphereGeometry, cloudMaterial);
-      sphere.position.set(x, y, z);
-      sphere.scale.setScalar(s * scale);
-      cloudGroup.add(sphere);
-    });
-
-    cloudGroup.position.copy(position);
-
-    const driftSpeed = 0.2 + Math.random() * 0.3;
-    this.addBackgroundObject(cloudGroup, (dt) => {
-      cloudGroup.position.x += driftSpeed * dt * 2;
-      if (cloudGroup.position.x > 150) {
-        cloudGroup.position.x = -150;
-      }
-    });
-  }
-
   private createBird(): THREE.Mesh {
     const shape = new THREE.Shape();
     shape.moveTo(0, 0);
@@ -481,6 +551,265 @@ export class BackgroundTheme {
     geometry.computeVertexNormals();
 
     return asteroid;
+  }
+
+  // Level 1 objects
+  private createHill(): THREE.Mesh {
+    const geometry = new THREE.SphereGeometry(1, 16, 16);
+    const material = new THREE.MeshBasicMaterial({ color: 0x6aa84f });
+    const hill = new THREE.Mesh(geometry, material);
+    hill.scale.set(1, 0.6, 1); // Flatten it to make it look like a hill
+    return hill;
+  }
+
+  private createBalloon(): THREE.Group {
+    const balloon = new THREE.Group();
+
+    // Balloon sphere
+    const balloonGeometry = new THREE.SphereGeometry(1.5, 16, 16);
+    const colors = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0x95e1d3, 0xf38181];
+    const balloonMaterial = new THREE.MeshBasicMaterial({
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+    const balloonMesh = new THREE.Mesh(balloonGeometry, balloonMaterial);
+    balloon.add(balloonMesh);
+
+    // String
+    const stringGeometry = new THREE.CylinderGeometry(0.05, 0.05, 3, 4);
+    const stringMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 });
+    const string = new THREE.Mesh(stringGeometry, stringMaterial);
+    string.position.y = -2.5;
+    balloon.add(string);
+
+    return balloon;
+  }
+
+  private createButterfly(): THREE.Group {
+    const butterfly = new THREE.Group();
+
+    // Wings (two triangles)
+    const wingShape = new THREE.Shape();
+    wingShape.moveTo(0, 0);
+    wingShape.lineTo(0.8, 0.6);
+    wingShape.lineTo(0.8, -0.6);
+    wingShape.lineTo(0, 0);
+
+    const wingGeometry = new THREE.ShapeGeometry(wingShape);
+    const colors = [0xff6b9d, 0xffd93d, 0x6bcf7f, 0x6bb6ff];
+    const wingMaterial = new THREE.MeshBasicMaterial({
+      color: colors[Math.floor(Math.random() * colors.length)],
+      side: THREE.DoubleSide,
+    });
+
+    const leftWing = new THREE.Mesh(wingGeometry, wingMaterial);
+    leftWing.position.x = -0.1;
+    butterfly.add(leftWing);
+
+    const rightWing = new THREE.Mesh(wingGeometry, wingMaterial);
+    rightWing.scale.x = -1;
+    rightWing.position.x = 0.1;
+    butterfly.add(rightWing);
+
+    // Body
+    const bodyGeometry = new THREE.CapsuleGeometry(0.1, 0.8, 4, 8);
+    const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.rotation.z = Math.PI / 2;
+    butterfly.add(body);
+
+    return butterfly;
+  }
+
+  // Level 2 objects
+  private createLantern(): THREE.Group {
+    const lantern = new THREE.Group();
+
+    // Lantern body
+    const bodyGeometry = new THREE.CylinderGeometry(0.6, 0.6, 1.5, 6);
+    const bodyMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffaa00,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    lantern.add(body);
+
+    // Glow sphere inside
+    const glowGeometry = new THREE.SphereGeometry(0.4, 8, 8);
+    const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    lantern.add(glow);
+
+    return lantern;
+  }
+
+  // Level 3 objects
+  private createRock(): THREE.Mesh {
+    const geometry = new THREE.DodecahedronGeometry(1, 0);
+    const material = new THREE.MeshBasicMaterial({ color: 0x888888 });
+    const rock = new THREE.Mesh(geometry, material);
+
+    // Make it irregular
+    const vertices = geometry.attributes.position;
+    for (let i = 0; i < vertices.count; i++) {
+      const v = new THREE.Vector3(
+        vertices.getX(i),
+        vertices.getY(i),
+        vertices.getZ(i)
+      );
+      v.multiplyScalar(0.7 + Math.random() * 0.6);
+      vertices.setXYZ(i, v.x, v.y, v.z);
+    }
+    geometry.computeVertexNormals();
+
+    return rock;
+  }
+
+  private createCrystal(): THREE.Mesh {
+    const geometry = new THREE.OctahedronGeometry(0.5, 0);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xaaccff,
+      transparent: true,
+      opacity: 0.6,
+    });
+    return new THREE.Mesh(geometry, material);
+  }
+
+  // Level 4 objects
+  private createGlowingMushroom(): THREE.Group {
+    const mushroom = new THREE.Group();
+
+    // Cap
+    const capGeometry = new THREE.SphereGeometry(1, 12, 12);
+    const capMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff4488,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const cap = new THREE.Mesh(capGeometry, capMaterial);
+    cap.scale.set(1, 0.6, 1);
+    cap.position.y = 0.5;
+    mushroom.add(cap);
+
+    // Stem
+    const stemGeometry = new THREE.CylinderGeometry(0.3, 0.4, 1, 8);
+    const stemMaterial = new THREE.MeshBasicMaterial({ color: 0xdddddd });
+    const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+    mushroom.add(stem);
+
+    return mushroom;
+  }
+
+  private createFirefly(): THREE.Mesh {
+    const geometry = new THREE.SphereGeometry(0.3, 8, 8);
+    const material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    return new THREE.Mesh(geometry, material);
+  }
+
+  private createTree(): THREE.Group {
+    const tree = new THREE.Group();
+
+    // Trunk
+    const trunkGeometry = new THREE.CylinderGeometry(0.4, 0.6, 2, 6);
+    const trunkMaterial = new THREE.MeshBasicMaterial({ color: 0x3d2817 });
+    const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+    tree.add(trunk);
+
+    // Foliage (cone)
+    const foliageGeometry = new THREE.ConeGeometry(1.2, 2, 8);
+    const foliageMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1a2e });
+    const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+    foliage.position.y = 2;
+    tree.add(foliage);
+
+    return tree;
+  }
+
+  private createBat(): THREE.Group {
+    const bat = new THREE.Group();
+
+    // Body
+    const bodyGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+    const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x2a2a2a });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    bat.add(body);
+
+    // Wings
+    const wingShape = new THREE.Shape();
+    wingShape.moveTo(0, 0);
+    wingShape.lineTo(1.2, 0.4);
+    wingShape.lineTo(1.2, -0.4);
+    wingShape.lineTo(0, 0);
+
+    const wingGeometry = new THREE.ShapeGeometry(wingShape);
+    const wingMaterial = new THREE.MeshBasicMaterial({
+      color: 0x3a3a3a,
+      side: THREE.DoubleSide,
+    });
+
+    const leftWing = new THREE.Mesh(wingGeometry, wingMaterial);
+    leftWing.position.x = -0.2;
+    bat.add(leftWing);
+
+    const rightWing = new THREE.Mesh(wingGeometry, wingMaterial);
+    rightWing.scale.x = -1;
+    rightWing.position.x = 0.2;
+    bat.add(rightWing);
+
+    return bat;
+  }
+
+  // Level 5 objects
+  private createSpaceCrystal(): THREE.Mesh {
+    const geometry = new THREE.OctahedronGeometry(1, 0);
+    const colors = [0xff44ff, 0x44ffff, 0xffff44, 0x44ff44];
+    const material = new THREE.MeshBasicMaterial({
+      color: colors[Math.floor(Math.random() * colors.length)],
+      transparent: true,
+      opacity: 0.7,
+    });
+    const crystal = new THREE.Mesh(geometry, material);
+    crystal.scale.set(1, 2, 1); // Make it elongated
+    return crystal;
+  }
+
+  private createSpaceDebris(): THREE.Mesh {
+    const geometry = new THREE.IcosahedronGeometry(1, 0);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x6688ff,
+      transparent: true,
+      opacity: 0.6,
+    });
+    return new THREE.Mesh(geometry, material);
+  }
+
+  private createSpaceStation(): THREE.Group {
+    const station = new THREE.Group();
+
+    // Central hub
+    const hubGeometry = new THREE.SphereGeometry(3, 16, 16);
+    const hubMaterial = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+    const hub = new THREE.Mesh(hubGeometry, hubMaterial);
+    station.add(hub);
+
+    // Solar panels (flat rectangles)
+    for (let i = 0; i < 4; i++) {
+      const panelGeometry = new THREE.BoxGeometry(6, 0.1, 2);
+      const panelMaterial = new THREE.MeshBasicMaterial({ color: 0x2244aa });
+      const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+      panel.position.x = i % 2 === 0 ? 5 : -5;
+      panel.position.z = i < 2 ? 3 : -3;
+      station.add(panel);
+    }
+
+    // Antenna
+    const antennaGeometry = new THREE.CylinderGeometry(0.2, 0.2, 8, 8);
+    const antennaMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const antenna = new THREE.Mesh(antennaGeometry, antennaMaterial);
+    antenna.position.y = 5;
+    station.add(antenna);
+
+    return station;
   }
 
   private addBackgroundObject(
