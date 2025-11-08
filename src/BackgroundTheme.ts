@@ -164,7 +164,8 @@ export class BackgroundTheme {
     try {
       // Large ground plane extending to horizon
       // Position it centered under the level, extending forward and back
-      const groundGeometry = new THREE.PlaneGeometry(1000, 800, 80, 80);
+      // Width (X) = 1200, Depth (Z when rotated) = 1200 for good coverage
+      const groundGeometry = new THREE.PlaneGeometry(1200, 1200, 80, 80);
       const groundMaterial = new THREE.MeshBasicMaterial({
         vertexColors: true,
       });
