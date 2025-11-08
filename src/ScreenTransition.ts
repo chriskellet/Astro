@@ -84,9 +84,11 @@ export class ScreenTransition {
 
     let radius: number;
     if (this.direction === 'out') {
+      // Start with full black screen, expand hole to reveal
       radius = maxRadius * this.progress;
     } else {
-      radius = maxRadius * (1 - this.progress);
+      // 'in' - Start with no black, expand star to cover screen with black
+      radius = maxRadius * this.progress;
     }
 
     // Create a star shape mask
@@ -94,15 +96,15 @@ export class ScreenTransition {
     this.ctx.fillStyle = 'black';
 
     if (this.direction === 'out') {
-      // Fill everything
+      // Fill everything with black
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-      // Cut out star shape
+      // Cut out star shape (creates expanding hole that reveals screen)
       this.ctx.globalCompositeOperation = 'destination-out';
       this.drawStar(centerX, centerY, radius);
       this.ctx.fill();
     } else {
-      // Draw expanding star
+      // Draw expanding black star that covers the screen
       this.drawStar(centerX, centerY, radius);
       this.ctx.fill();
     }

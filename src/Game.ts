@@ -247,8 +247,8 @@ export class Game {
   }
 
   private levelComplete(): void {
-    // Use star wipe transition
-    this.transition.start('starwipe', 'out', 1000, () => {
+    // Use star wipe transition - first wipe IN to black
+    this.transition.start('starwipe', 'in', 1000, () => {
       // Advance to next level
       this.currentLevel++;
 
@@ -270,9 +270,9 @@ export class Game {
       // Update UI
       this.updateUI();
 
-      // Fade back in
+      // Wipe OUT to reveal new level
       setTimeout(() => {
-        this.transition.start('starwipe', 'in', 1000);
+        this.transition.start('starwipe', 'out', 1000);
       }, 100);
     });
   }
