@@ -171,7 +171,7 @@ export class BackgroundTheme {
       });
       const ground = new THREE.Mesh(groundGeometry, groundMaterial);
       ground.rotation.x = -Math.PI / 2;
-      ground.position.set(0, -60, 0); // Center it at Z:0 instead of -100
+      ground.position.set(0, -60, 50); // Position it forward so it's under the level path
 
       // Add procedural color variation to create field patterns
       const colors: number[] = [];
