@@ -54,23 +54,14 @@ export interface Collectible {
   type: CollectibleType;
 }
 
-export type PlatformType = 'static' | 'seesaw' | 'rotating' | 'moving' | 'spring' | 'falling';
+export type PlatformType = 'static' | 'elevator' | 'moving' | 'spring' | 'falling';
 
 export interface Platform {
   mesh: THREE.Mesh;
   position: THREE.Vector3;
   size: THREE.Vector3;
   type?: PlatformType;
-  // Seesaw properties
-  tiltAngle?: number;
-  maxTiltAngle?: number;
-  tiltSpeed?: number;
-  pivotPoint?: THREE.Vector3;
-  // Rotating platform properties
-  rotationSpeed?: number;
-  rotationAxis?: 'x' | 'y' | 'z';
-  currentRotation?: number;
-  // Moving platform properties
+  // Moving/Elevator platform properties
   moveDirection?: THREE.Vector3;
   moveSpeed?: number;
   moveRange?: number;

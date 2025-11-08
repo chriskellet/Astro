@@ -15,7 +15,8 @@ export class Physics {
     velocity: THREE.Vector3,
     playerRadius: number,
     playerHeight: number,
-    platforms: Platform[]
+    platforms: Platform[],
+    previousPlatform: Platform | null = null
   ): { grounded: boolean; platform: Platform | null } {
     let grounded = false;
     let groundPlatform: Platform | null = null;
@@ -26,22 +27,12 @@ export class Physics {
         continue;
       }
 
-      // For rotating platforms (seesaw, rotating), use mesh-based collision
-      const isRotatingPlatform = platform.type === 'seesaw' || platform.type === 'rotating';
-
-      let collision = false;
-      if (isRotatingPlatform) {
-        // Use mesh bounding box which accounts for rotation
-        collision = this.checkMeshCollision(position, playerRadius, playerHeight, platform);
-      } else {
-        // Use standard AABB collision
-        collision = this.checkBoxCollision(
-          position,
-          new THREE.Vector3(playerRadius * 2, playerHeight, playerRadius * 2),
-          platform.position,
-          platform.size
-        );
-      }
+      const collision = this.checkBoxCollision(
+        position,
+        new THREE.Vector3(playerRadius * 2, playerHeight, playerRadius * 2),
+        platform.position,
+        platform.size
+      );
 
       if (collision) {
         // Determine collision side
@@ -91,41 +82,29 @@ export class Physics {
       }
     }
 
+    // If player is on a moving/elevator platform, move with it
+    if (grounded && groundPlatform && previousPlatform === groundPlatform) {
+      if (groundPlatform.type === 'elevator' || groundPlatform.type === 'moving') {
+        this.applyPlatformMovement(position, groundPlatform);
+      }
+    }
+
     return { grounded, platform: groundPlatform };
   }
 
-  private checkMeshCollision(
-    position: THREE.Vector3,
-    playerRadius: number,
-    playerHeight: number,
-    platform: Platform
-  ): boolean {
-    // Update mesh bounding box to account for rotation
-    platform.mesh.geometry.computeBoundingBox();
-    const bbox = platform.mesh.geometry.boundingBox!;
+  private applyPlatformMovement(position: THREE.Vector3, platform: Platform): void {
+    if (!platform.moveDirection || !platform.moveSpeed || !platform.moveStartPos || platform.moveRange === undefined) {
+      return;
+    }
 
-    // Transform bounding box by mesh world matrix
-    const min = bbox.min.clone().applyMatrix4(platform.mesh.matrixWorld);
-    const max = bbox.max.clone().applyMatrix4(platform.mesh.matrixWorld);
+    // Calculate platform's current velocity based on sine wave motion
+    const progress = platform.moveProgress || 0;
+    const velocity = Math.cos(progress) * platform.moveSpeed * platform.moveRange;
 
-    // Expand by player dimensions
-    const playerMin = new THREE.Vector3(
-      position.x - playerRadius,
-      position.y - playerHeight / 2,
-      position.z - playerRadius
-    );
-    const playerMax = new THREE.Vector3(
-      position.x + playerRadius,
-      position.y + playerHeight / 2,
-      position.z + playerRadius
-    );
-
-    // AABB collision test
-    return (
-      playerMin.x <= max.x && playerMax.x >= min.x &&
-      playerMin.y <= max.y && playerMax.y >= min.y &&
-      playerMin.z <= max.z && playerMax.z >= min.z
-    );
+    // Apply platform movement to player
+    position.x += platform.moveDirection.x * velocity * 0.016; // Approximate deltaTime
+    position.y += platform.moveDirection.y * velocity * 0.016;
+    position.z += platform.moveDirection.z * velocity * 0.016;
   }
 
   private handlePlatformSpecialBehavior(platform: Platform, velocity: THREE.Vector3): void {

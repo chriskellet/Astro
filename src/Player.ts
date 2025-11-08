@@ -17,6 +17,7 @@ export class Player {
   private height: number = 1.5;
   private camera: THREE.Camera;
   private cameraOffset: THREE.Vector3;
+  private currentPlatform: import('./types').Platform | null = null;
   private leftFootFlame!: THREE.Mesh;
   private rightFootFlame!: THREE.Mesh;
   private lastJumpState: boolean = false;
@@ -468,10 +469,14 @@ export class Player {
       this.state.velocity,
       this.radius,
       this.height,
-      platforms
+      platforms,
+      this.currentPlatform
     );
 
     this.state.isJumping = !collision.grounded;
+
+    // Update current platform
+    this.currentPlatform = collision.platform;
 
     // Reset double jump and rocket jump when grounded
     if (collision.grounded) {
