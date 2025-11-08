@@ -61,7 +61,9 @@ describe('Level', () => {
 
   describe('update', () => {
     it('should update without errors', () => {
-      expect(() => level.update(0.016)).not.toThrow();
+      const playerPos = new THREE.Vector3(0, 5, 0);
+      const mockParticles = { emitFlame: () => {} };
+      expect(() => level.update(0.016, playerPos, mockParticles)).not.toThrow();
     });
   });
 

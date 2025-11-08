@@ -1,18 +1,22 @@
 import * as THREE from 'three';
-import { Platform, Collectible, LevelData } from './types';
+import { Platform, Collectible, LevelData, Enemy } from './types';
+import { EnemyFactory } from './EnemyFactory';
 
 export class Level {
   private scene: THREE.Scene;
   public data: LevelData;
+  private enemyFactory: EnemyFactory;
 
   constructor(scene: THREE.Scene, levelNumber: number = 1) {
     this.scene = scene;
+    this.enemyFactory = new EnemyFactory(scene);
     this.data = this.createLevel(levelNumber);
   }
 
   private createLevel(_levelNumber: number): LevelData {
     const platforms: Platform[] = [];
     const collectibles: Collectible[] = [];
+    const enemies: Enemy[] = [];
 
     // Future: Use levelNumber to generate different levels
 
@@ -49,9 +53,27 @@ export class Level {
     collectibles.push(this.createCollectible(30, 7, 8, 10));
     collectibles.push(this.createCollectible(35, 9, 5, 50));
 
+    // Add enemies
+    // Pusher bot on platform 2
+    enemies.push(this.enemyFactory.createEnemy('pusher', 8, 2.5, -5));
+
+    // Spiky bot on platform 4
+    enemies.push(this.enemyFactory.createEnemy('spiky', 20, 4.5, -3));
+
+    // Fire breather on platform 5
+    enemies.push(this.enemyFactory.createEnemy('firebreather', 25, 5.5, 2));
+
+    // Another pusher on platform 6
+    enemies.push(this.enemyFactory.createEnemy('pusher', 30, 6.5, 8));
+
+    // Create chicken bot near the start
+    const chickenBot = this.enemyFactory.createChickenBot(3, 1.5, 0);
+
     return {
       platforms,
       collectibles,
+      enemies,
+      chickenBot,
       startPosition: new THREE.Vector3(0, 5, 0),
       endPosition: new THREE.Vector3(35, 10, 5),
     };
@@ -117,7 +139,7 @@ export class Level {
     };
   }
 
-  public update(deltaTime: number): void {
+  public update(deltaTime: number, playerPosition: THREE.Vector3, particles: any): void {
     // Animate collectibles
     this.data.collectibles.forEach((collectible) => {
       if (!collectible.collected) {
@@ -129,6 +151,16 @@ export class Level {
         collectible.mesh.position.y = collectible.position.y + bobAmount;
       }
     });
+
+    // Update enemies
+    this.data.enemies.forEach((enemy) => {
+      this.enemyFactory.updateEnemy(enemy, deltaTime, playerPosition, particles);
+    });
+
+    // Update chicken bot
+    if (this.data.chickenBot) {
+      this.enemyFactory.updateChickenBot(this.data.chickenBot, deltaTime, playerPosition);
+    }
   }
 
   public checkCollectibles(playerPosition: THREE.Vector3, playerRadius: number): number {
@@ -181,5 +213,13 @@ export class Level {
     this.data.collectibles.forEach((collectible) => {
       this.scene.remove(collectible.mesh);
     });
+
+    this.data.enemies.forEach((enemy) => {
+      this.scene.remove(enemy.mesh);
+    });
+
+    if (this.data.chickenBot) {
+      this.scene.remove(this.data.chickenBot.mesh);
+    }
   }
 }
