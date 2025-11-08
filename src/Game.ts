@@ -6,6 +6,7 @@ import { Physics } from './Physics';
 import { VirtualGamepad } from './VirtualGamepad';
 import { ParticleSystem } from './ParticleSystem';
 import { ScreenTransition } from './ScreenTransition';
+import { CameraIntro } from './CameraIntro';
 import { getCollectibleTypeForSkin } from './skins';
 
 export class Game {
@@ -19,6 +20,7 @@ export class Game {
   private gamepad: VirtualGamepad;
   private particles: ParticleSystem;
   private transition: ScreenTransition;
+  private cameraIntro: CameraIntro;
   private controlCanvas: HTMLCanvasElement;
   private lastTime: number;
   private running: boolean;
@@ -75,6 +77,9 @@ export class Game {
     // Screen Transition
     this.transition = new ScreenTransition();
 
+    // Camera Intro
+    this.cameraIntro = new CameraIntro(this.camera);
+
     // Lighting
     this.setupLighting();
 
@@ -85,6 +90,9 @@ export class Game {
     // Player - pass selected skin
     this.player = new Player(this.physics, this.camera, this.particles, skin);
     this.scene.add(this.player.mesh);
+
+    // Start camera intro flyover
+    this.startLevelIntro();
 
     // Create control canvas overlay
     this.controlCanvas = document.createElement('canvas');
@@ -101,6 +109,13 @@ export class Game {
 
     // Virtual Gamepad
     this.gamepad = new VirtualGamepad(this.controlCanvas);
+
+    // Add click handler to skip/speed up intro
+    this.canvas.addEventListener('click', () => {
+      if (this.cameraIntro.isActive()) {
+        this.cameraIntro.speedUp();
+      }
+    });
 
     // Handle resize
     window.addEventListener('resize', this.handleResize.bind(this));
@@ -186,6 +201,12 @@ export class Game {
   }
 
   private update(deltaTime: number): void {
+    // Update camera intro if active
+    if (this.cameraIntro.isActive()) {
+      this.cameraIntro.update(deltaTime);
+      return; // Don't update gameplay while intro is playing
+    }
+
     // Don't update if transition is active
     if (this.transition.isActive()) {
       return;
@@ -381,6 +402,17 @@ export class Game {
     }
   }
 
+  private startLevelIntro(): void {
+    this.cameraIntro.start(
+      this.level.data.startPosition,
+      this.level.data.endPosition,
+      () => {
+        // Intro complete - camera is now at player position
+        // Player update will take over camera control
+      }
+    );
+  }
+
   private levelComplete(): void {
     // Use star wipe transition - first wipe IN to black
     this.transition.start('starwipe', 'in', 1000, () => {
@@ -406,9 +438,11 @@ export class Game {
       // Update UI
       this.updateUI();
 
-      // Wipe OUT to reveal new level
+      // Wipe OUT to reveal new level with camera intro
       setTimeout(() => {
-        this.transition.start('starwipe', 'out', 1000);
+        this.transition.start('starwipe', 'out', 1000, () => {
+          this.startLevelIntro();
+        });
       }, 100);
     });
   }
@@ -427,9 +461,11 @@ export class Game {
       // Update UI to show reset health
       this.updateUI();
 
-      // Fade back in
+      // Fade back in with camera intro
       setTimeout(() => {
-        this.transition.start('fade', 'in', 800);
+        this.transition.start('fade', 'in', 800, () => {
+          this.startLevelIntro();
+        });
       }, 200);
     });
   }

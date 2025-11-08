@@ -26,12 +26,22 @@ export class Physics {
         continue;
       }
 
-      const collision = this.checkBoxCollision(
-        position,
-        new THREE.Vector3(playerRadius * 2, playerHeight, playerRadius * 2),
-        platform.position,
-        platform.size
-      );
+      // For rotating platforms (seesaw, rotating), use mesh-based collision
+      const isRotatingPlatform = platform.type === 'seesaw' || platform.type === 'rotating';
+
+      let collision = false;
+      if (isRotatingPlatform) {
+        // Use mesh bounding box which accounts for rotation
+        collision = this.checkMeshCollision(position, playerRadius, playerHeight, platform);
+      } else {
+        // Use standard AABB collision
+        collision = this.checkBoxCollision(
+          position,
+          new THREE.Vector3(playerRadius * 2, playerHeight, playerRadius * 2),
+          platform.position,
+          platform.size
+        );
+      }
 
       if (collision) {
         // Determine collision side
@@ -82,6 +92,40 @@ export class Physics {
     }
 
     return { grounded, platform: groundPlatform };
+  }
+
+  private checkMeshCollision(
+    position: THREE.Vector3,
+    playerRadius: number,
+    playerHeight: number,
+    platform: Platform
+  ): boolean {
+    // Update mesh bounding box to account for rotation
+    platform.mesh.geometry.computeBoundingBox();
+    const bbox = platform.mesh.geometry.boundingBox!;
+
+    // Transform bounding box by mesh world matrix
+    const min = bbox.min.clone().applyMatrix4(platform.mesh.matrixWorld);
+    const max = bbox.max.clone().applyMatrix4(platform.mesh.matrixWorld);
+
+    // Expand by player dimensions
+    const playerMin = new THREE.Vector3(
+      position.x - playerRadius,
+      position.y - playerHeight / 2,
+      position.z - playerRadius
+    );
+    const playerMax = new THREE.Vector3(
+      position.x + playerRadius,
+      position.y + playerHeight / 2,
+      position.z + playerRadius
+    );
+
+    // AABB collision test
+    return (
+      playerMin.x <= max.x && playerMax.x >= min.x &&
+      playerMin.y <= max.y && playerMax.y >= min.y &&
+      playerMin.z <= max.z && playerMax.z >= min.z
+    );
   }
 
   private handlePlatformSpecialBehavior(platform: Platform, velocity: THREE.Vector3): void {
