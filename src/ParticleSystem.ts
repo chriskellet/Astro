@@ -7,6 +7,7 @@ interface Particle {
   maxLifetime: number;
   size: number;
   color: THREE.Color;
+  type?: 'flame' | 'smoke' | 'collect' | 'death' | 'enemyDefeated';
 }
 
 export class ParticleSystem {
@@ -59,6 +60,7 @@ export class ParticleSystem {
         maxLifetime: 0.3 + Math.random() * 0.2,
         size: 0.15 + Math.random() * 0.1,
         color: new THREE.Color().setHSL(0.05 + Math.random() * 0.1, 1, 0.5 + Math.random() * 0.3),
+        type: 'flame',
       };
 
       this.particles.push(particle);
@@ -83,6 +85,7 @@ export class ParticleSystem {
         maxLifetime: 0.5 + Math.random() * 0.3,
         size: 0.2 + Math.random() * 0.15,
         color: new THREE.Color(0.7, 0.7, 0.7),
+        type: 'smoke',
       };
 
       this.particles.push(particle);
@@ -109,6 +112,7 @@ export class ParticleSystem {
         maxLifetime: 0.4 + Math.random() * 0.3,
         size: 0.1 + Math.random() * 0.05,
         color: new THREE.Color(1, 0.9, 0),
+        type: 'collect',
       };
 
       this.particles.push(particle);
@@ -133,6 +137,7 @@ export class ParticleSystem {
         maxLifetime: 0.6 + Math.random() * 0.4,
         size: 0.15 + Math.random() * 0.1,
         color: new THREE.Color().setHSL(0.6, 0.8, 0.5),
+        type: 'death',
       };
 
       this.particles.push(particle);
@@ -155,11 +160,25 @@ export class ParticleSystem {
         maxLifetime: 0.5 + Math.random() * 0.3,
         size: 0.12 + Math.random() * 0.08,
         color: color.clone(),
+        type: 'enemyDefeated',
       };
 
       this.particles.push(particle);
       this.createParticleMesh(particle);
     }
+  }
+
+  // Check if any flame particles collide with a given position
+  public checkFlameCollisions(position: THREE.Vector3, radius: number): boolean {
+    for (const particle of this.particles) {
+      if (particle.type === 'flame') {
+        const distance = particle.position.distanceTo(position);
+        if (distance < radius + particle.size) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   private createParticleMesh(particle: Particle): void {

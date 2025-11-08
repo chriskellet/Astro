@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Platform, Collectible, LevelData, Enemy, CollectibleType } from './types';
+import { Platform, Collectible, LevelData, Enemy, CollectibleType, EnemyType } from './types';
 import { EnemyFactory } from './EnemyFactory';
 
 export class Level {
@@ -71,23 +71,27 @@ export class Level {
     // End platform
     platforms.push(this.createPlatform(148, 11, 2, 10, 2, 10, 0xff6b6b));
 
-    // Collectibles spread throughout
-    collectibles.push(this.createCollectible(10, 3, 0, 10));
-    collectibles.push(this.createCollectible(28, 5, 2, 10));
+    // Collectibles with varied patterns
+    collectibles.push(...this.createCollectiblePair(10, 3, 0, 10));
+    collectibles.push(...this.createCollectibleRow(28, 5, 2, 10, 3));
     collectibles.push(this.createCollectible(50, 8, -4, 20));
-    collectibles.push(this.createCollectible(63, 10, -3, 15));
-    collectibles.push(this.createCollectible(78, 8, -2, 10));
-    collectibles.push(this.createCollectible(95, 8, -5, 20));
-    collectibles.push(this.createCollectible(110, 10, -3, 15));
+    collectibles.push(...this.createCollectibleCircle(63, 10, -3, 15, 5, 1.5));
+    collectibles.push(...this.createCollectiblePair(78, 8, -2, 10));
+    collectibles.push(...this.createCollectibleVerticalStack(95, 8, -5, 15, 3));
+    collectibles.push(...this.createCollectibleRow(110, 10, -3, 15, 4));
     collectibles.push(this.createCollectible(126, 10, -2, 10));
-    collectibles.push(this.createCollectible(139, 12, -1, 25));
+    collectibles.push(...this.createCollectiblePair(133, 11, 3, 20));
+    collectibles.push(...this.createCollectibleCircle(139, 12, -1, 20, 6, 1.8));
     collectibles.push(this.createCollectible(148, 14, 2, 50));
 
-    // Enemies - spread out to create pacing
-    enemies.push(this.enemyFactory.createEnemy('pusher', 36, 5.5, -2));
+    // Enemies - more varied placement with multiple per platform
+    enemies.push(...this.createEnemyPair('pusher', 36, 5.5, -2));
+    enemies.push(this.enemyFactory.createEnemy('spiky', 56, 8.5, 2));
     enemies.push(this.enemyFactory.createEnemy('spiky', 70, 8.5, 4));
-    enemies.push(this.enemyFactory.createEnemy('firebreather', 95, 7.5, -5));
-    enemies.push(this.enemyFactory.createEnemy('pusher', 126, 9.5, -2));
+    enemies.push(...this.createEnemyRow('firebreather', 95, 7.5, -5, 2, 3));
+    enemies.push(this.enemyFactory.createEnemy('pusher', 110, 9.5, -3));
+    enemies.push(this.enemyFactory.createEnemy('spiky', 118, 8.5, 4));
+    enemies.push(...this.createEnemyPair('pusher', 126, 9.5, -2, 4));
 
     // Chicken bot near start
     const chickenBot = this.enemyFactory.createChickenBot(5, 1.5, 0);
@@ -138,22 +142,27 @@ export class Level {
     // End platform
     platforms.push(this.createPlatform(164, 16, 2, 10, 2, 10, 0xff6b6b));
 
-    // Collectibles
-    collectibles.push(this.createCollectible(18, 5, -3, 10));
-    collectibles.push(this.createCollectible(35, 7, -2, 15));
-    collectibles.push(this.createCollectible(55, 9, -3, 20));
-    collectibles.push(this.createCollectible(73, 11, -4, 15));
-    collectibles.push(this.createCollectible(92, 13, -3, 20));
-    collectibles.push(this.createCollectible(111, 15, -2, 25));
-    collectibles.push(this.createCollectible(130, 15, -3, 15));
-    collectibles.push(this.createCollectible(152, 17, -1, 30));
+    // Collectibles with varied patterns
+    collectibles.push(...this.createCollectibleVerticalStack(18, 5, -3, 10, 2));
+    collectibles.push(...this.createCollectiblePair(35, 9, -2, 15));
+    collectibles.push(...this.createCollectibleRow(55, 9, -3, 15, 3));
+    collectibles.push(...this.createCollectibleCircle(73, 11, -4, 15, 5, 1.5));
+    collectibles.push(...this.createCollectiblePair(82, 11, 2, 15));
+    collectibles.push(...this.createCollectibleVerticalStack(92, 11, -3, 20, 3));
+    collectibles.push(...this.createCollectibleRow(111, 15, -2, 20, 4));
+    collectibles.push(...this.createCollectibleCircle(130, 15, -3, 15, 6, 2));
+    collectibles.push(...this.createCollectiblePair(140, 16, 2, 25));
+    collectibles.push(...this.createCollectibleRow(152, 17, -1, 25, 3));
     collectibles.push(this.createCollectible(164, 19, 2, 50));
 
-    // Enemies
-    enemies.push(this.enemyFactory.createEnemy('pusher', 27, 5.5, 2));
+    // Enemies - more challenging with rows and pairs
+    enemies.push(this.enemyFactory.createEnemy('pusher', 27, 9.5, 2));
+    enemies.push(...this.createEnemyPair('spiky', 55, 9.5, -3));
     enemies.push(this.enemyFactory.createEnemy('spiky', 65, 9.5, 4));
-    enemies.push(this.enemyFactory.createEnemy('firebreather', 92, 12.5, -3));
-    enemies.push(this.enemyFactory.createEnemy('pusher', 130, 14.5, -3));
+    enemies.push(...this.createEnemyRow('firebreather', 92, 12.5, -3, 2, 4));
+    enemies.push(this.enemyFactory.createEnemy('pusher', 122, 17.5, 4));
+    enemies.push(...this.createEnemyPair('pusher', 130, 14.5, -3));
+    enemies.push(this.enemyFactory.createEnemy('firebreather', 152, 17.5, -1));
 
     const chickenBot = this.enemyFactory.createChickenBot(5, 1.5, 0);
 
@@ -204,22 +213,28 @@ export class Level {
     // End platform
     platforms.push(this.createPlatform(162, 30, 0, 10, 2, 10, 0xff6b6b));
 
-    // Collectibles
-    collectibles.push(this.createCollectible(26, 8, 2, 10));
-    collectibles.push(this.createCollectible(44, 12, 3, 15));
-    collectibles.push(this.createCollectible(62, 16, 2, 20));
-    collectibles.push(this.createCollectible(80, 20, 2, 15));
-    collectibles.push(this.createCollectible(98, 22, 3, 25));
-    collectibles.push(this.createCollectible(116, 24, 2, 20));
-    collectibles.push(this.createCollectible(134, 28, 3, 30));
-    collectibles.push(this.createCollectible(151, 30, 2, 25));
+    // Collectibles with varied patterns
+    collectibles.push(...this.createCollectibleVerticalStack(26, 6, 2, 10, 3));
+    collectibles.push(...this.createCollectibleCircle(44, 15, 3, 15, 6, 2));
+    collectibles.push(...this.createCollectiblePair(53, 17, -3, 15));
+    collectibles.push(...this.createCollectibleRow(62, 19, 2, 15, 4));
+    collectibles.push(...this.createCollectiblePair(80, 20, 2, 15));
+    collectibles.push(...this.createCollectibleVerticalStack(98, 20, 3, 20, 3));
+    collectibles.push(...this.createCollectibleCircle(116, 26, 2, 20, 5, 1.8));
+    collectibles.push(...this.createCollectibleRow(134, 30, 3, 25, 3));
+    collectibles.push(...this.createCollectiblePair(142, 28, -2, 25));
+    collectibles.push(...this.createCollectibleCircle(151, 33, 2, 25, 6, 2));
     collectibles.push(this.createCollectible(162, 33, 0, 50));
 
-    // Enemies
-    enemies.push(this.enemyFactory.createEnemy('firebreather', 35, 9.5, -2));
-    enemies.push(this.enemyFactory.createEnemy('spiky', 71, 17.5, -3));
-    enemies.push(this.enemyFactory.createEnemy('pusher', 107, 22.5, -3));
-    enemies.push(this.enemyFactory.createEnemy('firebreather', 142, 29.5, -2));
+    // Enemies - multiple per platform, rows of shooters
+    enemies.push(...this.createEnemyPair('firebreather', 35, 12.5, -2));
+    enemies.push(this.enemyFactory.createEnemy('pusher', 53, 16.5, -3));
+    enemies.push(...this.createEnemyPair('spiky', 71, 21.5, -3));
+    enemies.push(this.enemyFactory.createEnemy('firebreather', 89, 17.5, -2));
+    enemies.push(...this.createEnemyRow('firebreather', 107, 22.5, -3, 3, 2.5));
+    enemies.push(this.enemyFactory.createEnemy('pusher', 126, 25.5, -2));
+    enemies.push(...this.createEnemyPair('spiky', 142, 29.5, -2));
+    enemies.push(this.enemyFactory.createEnemy('pusher', 151, 32.5, 2));
 
     const chickenBot = this.enemyFactory.createChickenBot(5, 1.5, 0);
 
@@ -276,21 +291,30 @@ export class Level {
     // End platform
     platforms.push(this.createPlatform(152, 67, 2, 10, 2, 10, 0xff6b6b));
 
-    // Collectibles
-    collectibles.push(this.createCollectible(18, 8, -3, 15));
-    collectibles.push(this.createCollectible(35, 19, -2, 20));
-    collectibles.push(this.createCollectible(52, 28, -2, 15));
-    collectibles.push(this.createCollectible(74, 31, 2, 20));
-    collectibles.push(this.createCollectible(83, 35, -3, 25));
-    collectibles.push(this.createCollectible(99, 46, -2, 30));
-    collectibles.push(this.createCollectible(116, 54, -2, 20));
-    collectibles.push(this.createCollectible(143, 62, -1, 35));
+    // Collectibles with varied patterns
+    collectibles.push(...this.createCollectibleVerticalStack(18, 10, -3, 15, 3));
+    collectibles.push(...this.createCollectibleCircle(26, 15, 2, 15, 5, 1.5));
+    collectibles.push(...this.createCollectibleRow(35, 26, -2, 20, 3));
+    collectibles.push(...this.createCollectiblePair(52, 28, -2, 15));
+    collectibles.push(...this.createCollectibleRow(59, 29, 3, 15, 3));
+    collectibles.push(...this.createCollectibleCircle(74, 31, 2, 20, 6, 2));
+    collectibles.push(...this.createCollectibleVerticalStack(83, 35, -3, 20, 4));
+    collectibles.push(...this.createCollectiblePair(91, 42, 2, 25));
+    collectibles.push(...this.createCollectibleRow(99, 52, -2, 25, 4));
+    collectibles.push(...this.createCollectibleCircle(116, 54, -2, 20, 5, 1.8));
+    collectibles.push(...this.createCollectiblePair(125, 55, 2, 30));
+    collectibles.push(...this.createCollectibleRow(143, 64, -1, 30, 3));
     collectibles.push(this.createCollectible(152, 70, 2, 50));
 
-    // Enemies
-    enemies.push(this.enemyFactory.createEnemy('spiky', 26, 14.5, 2));
-    enemies.push(this.enemyFactory.createEnemy('firebreather', 74, 30.5, 2));
-    enemies.push(this.enemyFactory.createEnemy('pusher', 116, 53.5, -2));
+    // Enemies - challenging with multiple on platforms
+    enemies.push(...this.createEnemyPair('spiky', 26, 14.5, 2));
+    enemies.push(this.enemyFactory.createEnemy('pusher', 44, 26.5, 3));
+    enemies.push(...this.createEnemyRow('firebreather', 74, 30.5, 2, 2, 3));
+    enemies.push(...this.createEnemyPair('spiky', 83, 41.5, -3));
+    enemies.push(this.enemyFactory.createEnemy('firebreather', 99, 52.5, -2));
+    enemies.push(...this.createEnemyPair('pusher', 116, 53.5, -2));
+    enemies.push(...this.createEnemyRow('spiky', 137, 57, 2, 3, 2));
+    enemies.push(this.enemyFactory.createEnemy('firebreather', 143, 67.5, -1));
 
     const chickenBot = this.enemyFactory.createChickenBot(5, 1.5, 0);
 
@@ -350,26 +374,38 @@ export class Level {
     // End platform
     platforms.push(this.createPlatform(189, 66, 0, 12, 2, 12, 0xff6b6b));
 
-    // Collectibles - more valuable in final level
-    collectibles.push(this.createCollectible(18, 6, -3, 15));
-    collectibles.push(this.createCollectible(37, 10, -3, 20));
-    collectibles.push(this.createCollectible(46, 14, 2, 25));
-    collectibles.push(this.createCollectible(64, 24, 2, 30));
-    collectibles.push(this.createCollectible(88, 28, -2, 25));
-    collectibles.push(this.createCollectible(100, 30, -2, 35));
-    collectibles.push(this.createCollectible(129, 38, 2, 40));
-    collectibles.push(this.createCollectible(146, 49, 3, 30));
-    collectibles.push(this.createCollectible(168, 57, -2, 45));
-    collectibles.push(this.createCollectible(177, 66, 2, 50));
-    collectibles.push(this.createCollectible(189, 69, 0, 100));
+    // Collectibles - more valuable in final level with lots of varied patterns
+    collectibles.push(...this.createCollectibleVerticalStack(18, 6, -3, 15, 3));
+    collectibles.push(...this.createCollectibleCircle(28, 10, 2, 20, 6, 2));
+    collectibles.push(...this.createCollectibleRow(37, 11, -3, 20, 4));
+    collectibles.push(...this.createCollectiblePair(46, 25, 2, 25));
+    collectibles.push(...this.createCollectibleCircle(55, 23, -3, 25, 5, 1.5));
+    collectibles.push(...this.createCollectibleRow(64, 28, 2, 25, 3));
+    collectibles.push(...this.createCollectibleVerticalStack(74, 26, -2, 25, 3));
+    collectibles.push(...this.createCollectiblePair(88, 28, -2, 25));
+    collectibles.push(...this.createCollectibleCircle(100, 28, -2, 30, 6, 2.5));
+    collectibles.push(...this.createCollectibleRow(109, 32, 3, 30, 4));
+    collectibles.push(...this.createCollectibleVerticalStack(119, 32, -2, 35, 4));
+    collectibles.push(...this.createCollectibleCircle(129, 50, 2, 35, 8, 2));
+    collectibles.push(...this.createCollectiblePair(146, 51, 3, 30));
+    collectibles.push(...this.createCollectibleRow(160, 55, 2, 40, 3));
+    collectibles.push(...this.createCollectibleCircle(168, 70, -2, 40, 6, 2.5));
+    collectibles.push(...this.createCollectibleRow(177, 68, 2, 45, 4));
+    collectibles.push(...this.createCollectibleCircle(189, 69, 0, 50, 8, 3));
 
-    // Enemies - more challenging placement
-    enemies.push(this.enemyFactory.createEnemy('firebreather', 28, 7.5, 2));
-    enemies.push(this.enemyFactory.createEnemy('pusher', 55, 21.5, -3));
-    enemies.push(this.enemyFactory.createEnemy('spiky', 74, 25.5, -2));
-    enemies.push(this.enemyFactory.createEnemy('firebreather', 119, 33.5, -2));
-    enemies.push(this.enemyFactory.createEnemy('pusher', 146, 48.5, 3));
-    enemies.push(this.enemyFactory.createEnemy('spiky', 177, 65.5, 2));
+    // Enemies - maximum challenge with rows and multiple per platform
+    enemies.push(...this.createEnemyRow('firebreather', 28, 9.5, 2, 2, 3));
+    enemies.push(...this.createEnemyPair('pusher', 46, 25.5, 2));
+    enemies.push(...this.createEnemyPair('spiky', 55, 24.5, -3));
+    enemies.push(...this.createEnemyRow('firebreather', 74, 26.5, -2, 3, 2.5));
+    enemies.push(this.enemyFactory.createEnemy('pusher', 88, 29.5, -2));
+    enemies.push(...this.createEnemyPair('spiky', 100, 27.5, -2));
+    enemies.push(...this.createEnemyRow('firebreather', 119, 35.5, -2, 2, 4));
+    enemies.push(...this.createEnemyPair('pusher', 129, 50.5, 2));
+    enemies.push(...this.createEnemyRow('spiky', 146, 52.5, 3, 3, 2));
+    enemies.push(this.enemyFactory.createEnemy('firebreather', 160, 55.5, 2));
+    enemies.push(...this.createEnemyPair('pusher', 168, 70.5, -2));
+    enemies.push(...this.createEnemyRow('firebreather', 177, 68.5, 2, 2, 3));
 
     const chickenBot = this.enemyFactory.createChickenBot(5, 1.5, 0);
 
@@ -609,6 +645,59 @@ export class Level {
       value,
       type: this.collectibleType,
     };
+  }
+
+  // Helper methods for varied collectible/enemy patterns
+
+  private createCollectiblePair(x: number, y: number, z: number, value: number, spacing: number = 1.5): Collectible[] {
+    return [
+      this.createCollectible(x - spacing / 2, y, z, value),
+      this.createCollectible(x + spacing / 2, y, z, value),
+    ];
+  }
+
+  private createCollectibleRow(x: number, y: number, z: number, value: number, count: number, spacing: number = 1.2): Collectible[] {
+    const collectibles: Collectible[] = [];
+    const startX = x - ((count - 1) * spacing) / 2;
+    for (let i = 0; i < count; i++) {
+      collectibles.push(this.createCollectible(startX + i * spacing, y, z, value));
+    }
+    return collectibles;
+  }
+
+  private createCollectibleCircle(x: number, y: number, z: number, value: number, count: number = 6, radius: number = 2): Collectible[] {
+    const collectibles: Collectible[] = [];
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const offsetX = Math.cos(angle) * radius;
+      const offsetZ = Math.sin(angle) * radius;
+      collectibles.push(this.createCollectible(x + offsetX, y, z + offsetZ, value));
+    }
+    return collectibles;
+  }
+
+  private createCollectibleVerticalStack(x: number, y: number, z: number, value: number, count: number, spacing: number = 1.5): Collectible[] {
+    const collectibles: Collectible[] = [];
+    for (let i = 0; i < count; i++) {
+      collectibles.push(this.createCollectible(x, y + i * spacing, z, value));
+    }
+    return collectibles;
+  }
+
+  private createEnemyRow(type: EnemyType, x: number, y: number, z: number, count: number, spacing: number = 2): Enemy[] {
+    const enemies: Enemy[] = [];
+    const startX = x - ((count - 1) * spacing) / 2;
+    for (let i = 0; i < count; i++) {
+      enemies.push(this.enemyFactory.createEnemy(type, startX + i * spacing, y, z));
+    }
+    return enemies;
+  }
+
+  private createEnemyPair(type: EnemyType, x: number, y: number, z: number, spacing: number = 3): Enemy[] {
+    return [
+      this.enemyFactory.createEnemy(type, x - spacing / 2, y, z),
+      this.enemyFactory.createEnemy(type, x + spacing / 2, y, z),
+    ];
   }
 
   public update(deltaTime: number, playerPosition: THREE.Vector3, particles: any): void {
