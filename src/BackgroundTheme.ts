@@ -163,13 +163,14 @@ export class BackgroundTheme {
 
     try {
       // Large ground plane extending to horizon
-      const groundGeometry = new THREE.PlaneGeometry(800, 600, 60, 60);
+      // Position it centered under the level, extending forward and back
+      const groundGeometry = new THREE.PlaneGeometry(1000, 800, 80, 80);
       const groundMaterial = new THREE.MeshBasicMaterial({
         vertexColors: true,
       });
       const ground = new THREE.Mesh(groundGeometry, groundMaterial);
       ground.rotation.x = -Math.PI / 2;
-      ground.position.set(0, -60, -100);
+      ground.position.set(0, -60, 0); // Center it at Z:0 instead of -100
 
       // Add procedural color variation to create field patterns
       const colors: number[] = [];
@@ -207,8 +208,8 @@ export class BackgroundTheme {
     }
 
     // Add some larger distinct field patches for variety
-    for (let i = 0; i < 20; i++) {
-      const fieldSize = 30 + Math.random() * 40;
+    for (let i = 0; i < 30; i++) {
+      const fieldSize = 30 + Math.random() * 50;
       const fieldGeometry = new THREE.PlaneGeometry(fieldSize, fieldSize, 4, 4);
       const fieldColor = fieldColors[Math.floor(Math.random() * fieldColors.length)];
       const fieldMaterial = new THREE.MeshBasicMaterial({
@@ -219,9 +220,9 @@ export class BackgroundTheme {
       const field = new THREE.Mesh(fieldGeometry, fieldMaterial);
       field.rotation.x = -Math.PI / 2;
       field.position.set(
-        (Math.random() - 0.5) * 700,
+        (Math.random() - 0.5) * 900,
         -59,
-        -50 - Math.random() * 500
+        (Math.random() - 0.5) * 700  // Spread across the entire Z range
       );
 
       // Slight rotation for variety
@@ -231,17 +232,17 @@ export class BackgroundTheme {
     }
 
     // Distant mountain ranges on the horizon
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 15; i++) {
       const mountain = this.createMountain();
       mountain.position.set(
-        -200 + i * 40,
+        -250 + i * 40,
         -50,
-        -200 - Math.random() * 100
+        -300 - Math.random() * 100
       );
       mountain.scale.set(
-        25 + Math.random() * 20,
         30 + Math.random() * 25,
-        25 + Math.random() * 20
+        35 + Math.random() * 30,
+        30 + Math.random() * 25
       );
       // Lighter color for distant mountains (atmospheric perspective)
       const mountainMesh = mountain.children[0] as THREE.Mesh;
