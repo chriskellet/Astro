@@ -151,55 +151,113 @@ export class BackgroundTheme {
   }
 
   private createSunnyDayBackground(): void {
-    // Distant rolling hills (visible on horizon)
-    for (let i = 0; i < 8; i++) {
-      const hill = this.createHill();
-      hill.position.set(
-        -120 + i * 35,
-        -25,
-        -80 - i * 5
-      );
-      hill.scale.set(
-        12 + Math.random() * 8,
-        8 + Math.random() * 6,
-        12 + Math.random() * 8
-      );
-      this.addBackgroundObject(hill);
+    // Ground plane far below - patchwork fields
+    const groundGeometry = new THREE.PlaneGeometry(400, 400, 40, 40);
+    const groundMaterial = new THREE.MeshBasicMaterial({
+      color: 0x7cb342,
+      wireframe: false,
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(0, -60, -80);
+
+    // Add some variation to ground vertices for terrain feel
+    const vertices = groundGeometry.attributes.position;
+    for (let i = 0; i < vertices.count; i++) {
+      const y = Math.random() * 2;
+      vertices.setY(i, y);
+    }
+    groundGeometry.computeVertexNormals();
+    this.addBackgroundObject(ground);
+
+    // Patchwork fields (different colored squares on the ground)
+    const fieldColors = [0x8bc34a, 0x7cb342, 0x689f38, 0xaed581, 0x9ccc65];
+    for (let x = -3; x < 4; x++) {
+      for (let z = -3; z < 4; z++) {
+        if (Math.random() > 0.3) {
+          const fieldGeometry = new THREE.PlaneGeometry(25, 25);
+          const fieldMaterial = new THREE.MeshBasicMaterial({
+            color: fieldColors[Math.floor(Math.random() * fieldColors.length)],
+          });
+          const field = new THREE.Mesh(fieldGeometry, fieldMaterial);
+          field.rotation.x = -Math.PI / 2;
+          field.position.set(x * 30, -59 + Math.random(), z * 30 - 80);
+          this.addBackgroundObject(field);
+        }
+      }
     }
 
-    // Floating colorful balloons in the distance
-    for (let i = 0; i < 6; i++) {
+    // Distant mountain ranges on the horizon
+    for (let i = 0; i < 10; i++) {
+      const mountain = this.createMountain();
+      mountain.position.set(
+        -150 + i * 35,
+        -50,
+        -120 - Math.random() * 30
+      );
+      mountain.scale.set(
+        20 + Math.random() * 15,
+        25 + Math.random() * 20,
+        20 + Math.random() * 15
+      );
+      // Lighter color for distant mountains (atmospheric perspective)
+      const mountainMesh = mountain.children[0] as THREE.Mesh;
+      const mountainMaterial = mountainMesh.material as THREE.MeshBasicMaterial;
+      mountainMaterial.color.setHex(0xaabbcc);
+      this.addBackgroundObject(mountain);
+    }
+
+    // Small clouds at mid-height (between camera and ground)
+    for (let i = 0; i < 8; i++) {
+      const cloud = this.createPuffyCloud();
+      cloud.position.set(
+        (Math.random() - 0.5) * 200,
+        -10 + Math.random() * 20,
+        -60 - Math.random() * 60
+      );
+      const driftSpeed = 0.2 + Math.random() * 0.3;
+      this.addBackgroundObject(cloud, (dt) => {
+        cloud.position.x += driftSpeed * dt * 2;
+        if (cloud.position.x > 120) {
+          cloud.position.x = -120;
+        }
+      });
+    }
+
+    // Floating colorful balloons in the distance (much smaller now)
+    for (let i = 0; i < 4; i++) {
       const balloon = this.createBalloon();
       balloon.position.set(
-        -80 + i * 35,
-        5 + Math.sin(i) * 5,
-        -70 - Math.random() * 30
+        -60 + i * 40,
+        -5 + Math.random() * 10,
+        -50 - Math.random() * 30
       );
+      balloon.scale.setScalar(0.7);
       const bobSpeed = 0.6 + i * 0.15;
       const bobOffset = i * 1.5;
       this.addBackgroundObject(balloon, (dt) => {
-        balloon.position.y = 5 + Math.sin(i) * 5 + Math.sin(Date.now() * 0.001 * bobSpeed + bobOffset) * 3;
+        balloon.position.y = -5 + Math.random() * 10 + Math.sin(Date.now() * 0.001 * bobSpeed + bobOffset) * 2;
         balloon.rotation.y += dt * 0.2;
       });
     }
 
-    // Butterflies fluttering at ground level
-    for (let i = 0; i < 8; i++) {
-      const butterfly = this.createButterfly();
-      const angle = (i / 8) * Math.PI * 2;
-      butterfly.position.set(
-        Math.cos(angle) * 50 + Math.random() * 20,
-        -5 + Math.random() * 8,
-        -60 - Math.random() * 30
+    // Birds flying at various heights between camera and ground
+    for (let i = 0; i < 6; i++) {
+      const bird = this.createBird();
+      bird.position.set(
+        -80 + i * 30,
+        -15 + Math.random() * 25,
+        -50 - Math.random() * 40
       );
-      const speed = 0.3 + Math.random() * 0.4;
-      this.addBackgroundObject(butterfly, (dt) => {
-        butterfly.position.x += speed * dt * 3;
-        butterfly.position.y += Math.sin(Date.now() * 0.004) * dt * 2;
-        if (butterfly.position.x > 100) {
-          butterfly.position.x = -100;
-        }
-        butterfly.rotation.y = Math.sin(Date.now() * 0.005) * 0.3;
+      bird.scale.setScalar(1.5);
+      const speed = 0.4 + Math.random() * 0.3;
+      const circleRadius = 20 + Math.random() * 15;
+      const angleOffset = (i / 6) * Math.PI * 2;
+      this.addBackgroundObject(bird, (_dt) => {
+        const time = Date.now() * 0.0003 * speed;
+        bird.position.x = Math.cos(time + angleOffset) * circleRadius + (i * 30 - 80);
+        bird.position.z = Math.sin(time + angleOffset) * circleRadius + (-50 - i * 5);
+        bird.rotation.y = time + angleOffset;
       });
     }
   }
@@ -483,6 +541,35 @@ export class BackgroundTheme {
   }
 
   // Helper methods to create various objects
+  private createPuffyCloud(): THREE.Group {
+    const cloud = new THREE.Group();
+    const sphereGeometry = new THREE.SphereGeometry(1, 12, 12);
+    const cloudMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.7,
+    });
+
+    // Create a puffy cloud from multiple spheres
+    const positions = [
+      [0, 0, 0, 3],
+      [2.5, 0, 0, 2.5],
+      [-2.5, 0, 0, 2.5],
+      [1.5, 0.8, 0, 2],
+      [-1.5, 0.8, 0, 2],
+      [0, 1.2, 0, 2.2],
+    ];
+
+    positions.forEach(([x, y, z, scale]) => {
+      const sphere = new THREE.Mesh(sphereGeometry, cloudMaterial);
+      sphere.position.set(x, y, z);
+      sphere.scale.setScalar(scale);
+      cloud.add(sphere);
+    });
+
+    return cloud;
+  }
+
   private createBird(): THREE.Mesh {
     const shape = new THREE.Shape();
     shape.moveTo(0, 0);
@@ -554,14 +641,6 @@ export class BackgroundTheme {
   }
 
   // Level 1 objects
-  private createHill(): THREE.Mesh {
-    const geometry = new THREE.SphereGeometry(1, 16, 16);
-    const material = new THREE.MeshBasicMaterial({ color: 0x6aa84f });
-    const hill = new THREE.Mesh(geometry, material);
-    hill.scale.set(1, 0.6, 1); // Flatten it to make it look like a hill
-    return hill;
-  }
-
   private createBalloon(): THREE.Group {
     const balloon = new THREE.Group();
 
@@ -582,42 +661,6 @@ export class BackgroundTheme {
     balloon.add(string);
 
     return balloon;
-  }
-
-  private createButterfly(): THREE.Group {
-    const butterfly = new THREE.Group();
-
-    // Wings (two triangles)
-    const wingShape = new THREE.Shape();
-    wingShape.moveTo(0, 0);
-    wingShape.lineTo(0.8, 0.6);
-    wingShape.lineTo(0.8, -0.6);
-    wingShape.lineTo(0, 0);
-
-    const wingGeometry = new THREE.ShapeGeometry(wingShape);
-    const colors = [0xff6b9d, 0xffd93d, 0x6bcf7f, 0x6bb6ff];
-    const wingMaterial = new THREE.MeshBasicMaterial({
-      color: colors[Math.floor(Math.random() * colors.length)],
-      side: THREE.DoubleSide,
-    });
-
-    const leftWing = new THREE.Mesh(wingGeometry, wingMaterial);
-    leftWing.position.x = -0.1;
-    butterfly.add(leftWing);
-
-    const rightWing = new THREE.Mesh(wingGeometry, wingMaterial);
-    rightWing.scale.x = -1;
-    rightWing.position.x = 0.1;
-    butterfly.add(rightWing);
-
-    // Body
-    const bodyGeometry = new THREE.CapsuleGeometry(0.1, 0.8, 4, 8);
-    const bodyMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.rotation.z = Math.PI / 2;
-    butterfly.add(body);
-
-    return butterfly;
   }
 
   // Level 2 objects
