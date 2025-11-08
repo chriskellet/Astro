@@ -29,8 +29,8 @@ export class Player {
 
   // Velocity-based thrust parameters
   private maxUpwardVelocity: number = 8; // Maximum upward speed (m/s)
-  private minThrust: number = 20; // Minimum thrust (counteracts gravity)
-  private maxThrust: number = 40; // Maximum thrust (for recovery from falls)
+  private minThrust: number = 28; // Minimum thrust (slightly above gravity for gentle rise)
+  private maxThrust: number = 70; // Maximum thrust (for recovery from falls)
 
   // Animation components for professional character model
   private bodyParts: {
