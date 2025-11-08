@@ -144,18 +144,32 @@ export class EnemyFactory {
       roughness: 0.2,
     });
 
-    // Create spikes around the sphere
-    for (let i = 0; i < 12; i++) {
+    // Create spikes around the equator pointing radially outward
+    for (let i = 0; i < 8; i++) {
       const spike = new THREE.Mesh(spikeGeometry, spikeMaterial);
-      const angle = (i / 12) * Math.PI * 2;
+      const angle = (i / 8) * Math.PI * 2;
+
+      // Position at the edge of the sphere
       const x = Math.cos(angle) * 0.6;
       const z = Math.sin(angle) * 0.6;
       spike.position.set(x, 0, z);
+
+      // Rotate to point outward
+      // First rotate 90° around Z to make cone horizontal
       spike.rotation.z = Math.PI / 2;
-      spike.lookAt(x * 2, 0, z * 2);
+      // Then rotate around Y to face outward at the correct angle
+      spike.rotation.y = angle;
+
       spike.castShadow = true;
       spikeGroup.add(spike);
     }
+
+    // Add one spike on top pointing straight up
+    const topSpike = new THREE.Mesh(spikeGeometry, spikeMaterial);
+    topSpike.position.set(0, 0.7, 0);
+    // No rotation needed - cone points up by default
+    topSpike.castShadow = true;
+    spikeGroup.add(topSpike);
 
     // Start with spikes retracted
     spikeGroup.scale.set(0.1, 0.1, 0.1);
@@ -376,7 +390,7 @@ export class EnemyFactory {
       const halfDepth = platform.size.z / 2;
       const halfHeight = platform.size.y / 2;
 
-      // Check if enemy is above the platform
+      // Check if enemy is above the platform horizontally
       if (
         enemy.position.x > platform.position.x - halfWidth - enemyRadius &&
         enemy.position.x < platform.position.x + halfWidth + enemyRadius &&
@@ -386,8 +400,8 @@ export class EnemyFactory {
         const platformTop = platform.position.y + halfHeight;
         const enemyBottom = enemy.position.y - enemyHeight / 2;
 
-        // Landing on platform
-        if (enemyBottom <= platformTop && enemyBottom + enemy.velocity.y * deltaTime > platformTop) {
+        // Landing on platform - check if falling onto it OR already resting on it
+        if (enemy.velocity.y <= 0 && enemyBottom <= platformTop + 0.1 && enemy.position.y > platform.position.y) {
           enemy.position.y = platformTop + enemyHeight / 2;
           enemy.velocity.y = 0;
           enemy.grounded = true;
