@@ -9,6 +9,10 @@ const SKIN_EMOJIS: Record<string, string> = {
   mario: '🔴',
   luigi: '🟢',
   sonic: '🔵',
+  steve: '⛏️',
+  amy: '💗',
+  tails: '🦊',
+  bowser: '🐢',
 };
 
 const SKIN_DESCRIPTIONS: Record<string, string> = {
@@ -16,6 +20,10 @@ const SKIN_DESCRIPTIONS: Record<string, string> = {
   mario: "It's-a me!",
   luigi: 'Green hero',
   sonic: 'Gotta go fast!',
+  steve: 'Blocky builder',
+  amy: 'Pink powerhouse',
+  tails: 'Flying fox',
+  bowser: 'King of the Koopas',
 };
 
 // Wait for DOM to be ready

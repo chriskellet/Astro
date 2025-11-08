@@ -229,6 +229,41 @@ export class Player {
     antennaTip.castShadow = true;
     this.bodyParts.head.add(antennaTip);
 
+    // Add hat for Mario and Luigi
+    if (this.skin.id === 'mario' || this.skin.id === 'luigi') {
+      // Hat brim
+      const hatBrimGeometry = new THREE.CylinderGeometry(0.35, 0.38, 0.05, 32);
+      const hatColor = this.skin.id === 'mario' ? 0xFF0000 : 0x00AA00;
+      const hatMaterial = new THREE.MeshStandardMaterial({
+        color: hatColor,
+        metalness: 0.2,
+        roughness: 0.6,
+      });
+      const hatBrim = new THREE.Mesh(hatBrimGeometry, hatMaterial);
+      hatBrim.position.set(0, 0.3, 0);
+      hatBrim.castShadow = true;
+      this.bodyParts.head.add(hatBrim);
+
+      // Hat top (dome)
+      const hatTopGeometry = new THREE.SphereGeometry(0.28, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+      const hatTop = new THREE.Mesh(hatTopGeometry, hatMaterial);
+      hatTop.position.set(0, 0.35, 0);
+      hatTop.castShadow = true;
+      this.bodyParts.head.add(hatTop);
+
+      // Hat logo/badge (M or L)
+      const badgeGeometry = new THREE.CircleGeometry(0.08, 16);
+      const badgeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xFFFFFF,
+        metalness: 0.1,
+        roughness: 0.3,
+      });
+      const badge = new THREE.Mesh(badgeGeometry, badgeMaterial);
+      badge.position.set(0, 0.3, 0.35);
+      badge.castShadow = true;
+      this.bodyParts.head.add(badge);
+    }
+
     this.bodyParts.head.position.y = 0.65;
     this.bodyParts.torso.add(this.bodyParts.head);
 
