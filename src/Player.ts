@@ -246,11 +246,11 @@ export class Player {
       // Emit flame and smoke particles from feet
       const leftFootPos = this.state.position.clone();
       leftFootPos.x -= 0.25;
-      leftFootPos.y -= this.height / 2 - 0.1; // Position at feet
+      leftFootPos.y -= 0.4; // Position at feet (adjusted for visual offset)
 
       const rightFootPos = this.state.position.clone();
       rightFootPos.x += 0.25;
-      rightFootPos.y -= this.height / 2 - 0.1; // Position at feet
+      rightFootPos.y -= 0.4; // Position at feet (adjusted for visual offset)
 
       if (thrustMultiplier > 0.1) {
         this.particles.emitFlame(leftFootPos, 2);
@@ -287,8 +287,9 @@ export class Player {
     // Keep within boundaries
     this.physics.checkBoundary(this.state.position, 50);
 
-    // Update mesh position
+    // Update mesh position with vertical offset so feet sit on ground
     this.mesh.position.copy(this.state.position);
+    this.mesh.position.y += 0.35; // Offset to prevent feet sinking into ground
 
     // Simple animation - bob when moving
     if (moveVector.length() > 0) {
