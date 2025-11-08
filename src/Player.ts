@@ -14,7 +14,6 @@ export class Player {
   private acceleration: number = 40; // Acceleration rate for smooth movement
   private friction: number = 20; // Deceleration when no input
   private jumpForce: number = 12;
-  private boosterThrust: number = 25;
   private radius: number = 0.5;
   private height: number = 1.5;
   private camera: THREE.Camera;
@@ -27,8 +26,11 @@ export class Player {
   private lastBoosterState: boolean = false;
   private rocketBoosterTime: number = 0;
   private rocketBoosterMaxTime: number = 3.0; // 3 seconds
-  private rocketStartHeight: number = 0;
-  private maxRocketHeight: number = 10; // Height at which thrust reduces to hover
+
+  // Velocity-based thrust parameters
+  private maxUpwardVelocity: number = 8; // Maximum upward speed (m/s)
+  private minThrust: number = 20; // Minimum thrust (counteracts gravity)
+  private maxThrust: number = 40; // Maximum thrust (for recovery from falls)
 
   // Animation components for professional character model
   private bodyParts: {
@@ -523,7 +525,6 @@ export class Player {
       this.rocketJumpAvailable = false;
       this.state.isBoosterActive = true;
       this.rocketBoosterTime = 0;
-      this.rocketStartHeight = this.state.position.y; // Track starting height
     }
 
     // Continue applying thrust while booster button is held and rocket jump is active
@@ -531,10 +532,7 @@ export class Player {
       // Update booster time
       this.rocketBoosterTime += deltaTime;
 
-      // Calculate how high we've risen
-      const heightGained = this.state.position.y - this.rocketStartHeight;
-
-      // Calculate thrust multiplier based on time remaining AND height
+      // Calculate thrust multiplier based on time remaining
       let thrustMultiplier = 1.0;
       if (this.rocketBoosterTime >= this.rocketBoosterMaxTime) {
         // Booster time expired - create splutter effect
@@ -545,21 +543,22 @@ export class Player {
         thrustMultiplier = Math.random() * 0.3;
       }
 
-      // Calculate height-based thrust adjustment
-      let heightBasedThrust = this.boosterThrust;
-
-      if (heightGained < this.maxRocketHeight) {
-        // Strong initial thrust when below max height
-        // Increase base thrust for better initial response
-        heightBasedThrust = 35; // Stronger than before (was 25)
+      // Calculate velocity-based thrust
+      let thrust;
+      if (this.state.velocity.y < 0) {
+        // Falling - increase thrust based on how fast we're falling
+        // The faster we fall, the more thrust we apply (up to maxThrust)
+        const fallSpeedFactor = Math.min(1, Math.abs(this.state.velocity.y) / 10);
+        thrust = this.minThrust + (this.maxThrust - this.minThrust) * fallSpeedFactor;
       } else {
-        // Reduce to hover thrust when at/above max height
-        // Just enough to counteract gravity (15) plus a bit extra
-        heightBasedThrust = 18; // Gentle hover
+        // Rising - reduce thrust as we approach max velocity
+        // This prevents us from going too high while still allowing controlled ascent
+        const velocityFactor = Math.max(0, 1 - this.state.velocity.y / this.maxUpwardVelocity);
+        thrust = this.minThrust + (this.maxThrust - this.minThrust) * velocityFactor;
       }
 
       // Apply upward thrust to counteract gravity and move upwards
-      this.state.velocity.y += heightBasedThrust * deltaTime * thrustMultiplier;
+      this.state.velocity.y += thrust * deltaTime * thrustMultiplier;
 
       // Emit flame and smoke particles from feet
       const leftFootPos = this.state.position.clone();
