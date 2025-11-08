@@ -20,6 +20,8 @@ export class Player {
   private lastJumpState: boolean = false;
   private rocketJumpAvailable: boolean = true;
   private lastBoosterState: boolean = false;
+  private rocketBoosterTime: number = 0;
+  private rocketBoosterMaxTime: number = 3.0; // 3 seconds
 
   constructor(physics: Physics, camera: THREE.Camera, particles: ParticleSystem) {
     this.physics = physics;
@@ -201,6 +203,7 @@ export class Player {
     if (collision.grounded) {
       this.state.doubleJumpUsed = false;
       this.rocketJumpAvailable = true;
+      this.rocketBoosterTime = 0;
     }
 
     // Jump (only trigger on new press, not held)
@@ -218,35 +221,57 @@ export class Player {
       // First press - activate rocket jump and make it unavailable until grounded
       this.rocketJumpAvailable = false;
       this.state.isBoosterActive = true;
+      this.rocketBoosterTime = 0;
     }
 
     // Continue applying thrust while booster button is held and rocket jump is active
     if (controls.booster && this.state.isBoosterActive) {
-      // Apply upward thrust to counteract gravity and move upwards
-      this.state.velocity.y += this.boosterThrust * deltaTime;
+      // Update booster time
+      this.rocketBoosterTime += deltaTime;
 
-      // Emit flame particles
+      // Calculate thrust multiplier based on time remaining
+      let thrustMultiplier = 1.0;
+      if (this.rocketBoosterTime >= this.rocketBoosterMaxTime) {
+        // Booster time expired - create splutter effect
+        this.state.isBoosterActive = false;
+        thrustMultiplier = 0;
+      } else if (this.rocketBoosterTime >= this.rocketBoosterMaxTime - 0.5) {
+        // Last 0.5 seconds - splutter with random thrust
+        thrustMultiplier = Math.random() * 0.3;
+      }
+
+      // Apply upward thrust to counteract gravity and move upwards
+      this.state.velocity.y += this.boosterThrust * deltaTime * thrustMultiplier;
+
+      // Emit flame and smoke particles from feet
       const leftFootPos = this.state.position.clone();
       leftFootPos.x -= 0.25;
-      leftFootPos.y -= this.radius - 0.9;
+      leftFootPos.y -= this.height / 2 - 0.1; // Position at feet
 
       const rightFootPos = this.state.position.clone();
       rightFootPos.x += 0.25;
-      rightFootPos.y -= this.radius - 0.9;
+      rightFootPos.y -= this.height / 2 - 0.1; // Position at feet
 
-      this.particles.emitFlame(leftFootPos, 2);
-      this.particles.emitFlame(rightFootPos, 2);
-      this.particles.emitSmoke(leftFootPos, 1);
-      this.particles.emitSmoke(rightFootPos, 1);
+      if (thrustMultiplier > 0.1) {
+        this.particles.emitFlame(leftFootPos, 2);
+        this.particles.emitFlame(rightFootPos, 2);
+        this.particles.emitSmoke(leftFootPos, 1);
+        this.particles.emitSmoke(rightFootPos, 1);
+      } else {
+        // Spluttering - less particles
+        this.particles.emitSmoke(leftFootPos, 1);
+        this.particles.emitSmoke(rightFootPos, 1);
+      }
 
-      // Show flame visuals
+      // Show flame visuals with opacity based on thrust
       const leftMat = this.leftFootFlame.material as THREE.MeshBasicMaterial;
       const rightMat = this.rightFootFlame.material as THREE.MeshBasicMaterial;
-      leftMat.opacity = 0.8 + Math.random() * 0.2;
-      rightMat.opacity = 0.8 + Math.random() * 0.2;
+      const flameOpacity = (0.8 + Math.random() * 0.2) * thrustMultiplier;
+      leftMat.opacity = flameOpacity;
+      rightMat.opacity = flameOpacity;
 
       // Animate flame size
-      const flameScale = 1 + Math.sin(Date.now() * 0.02) * 0.3;
+      const flameScale = (1 + Math.sin(Date.now() * 0.02) * 0.3) * thrustMultiplier;
       this.leftFootFlame.scale.set(1, flameScale, 1);
       this.rightFootFlame.scale.set(1, flameScale, 1);
     } else if (!controls.booster) {

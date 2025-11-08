@@ -64,6 +64,11 @@ export class ScreenTransition {
   private draw(): void {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+    // If transition is complete, clear everything
+    if (this.progress >= 1) {
+      return;
+    }
+
     if (this.type === 'fade') {
       this.drawFade();
     } else if (this.type === 'starwipe') {
