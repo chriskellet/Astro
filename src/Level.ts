@@ -718,6 +718,7 @@ export class Level {
 
     // Apply rotation to mesh
     platform.mesh.rotation.z = platform.tiltAngle || 0;
+    platform.mesh.updateMatrixWorld(true); // Update world matrix for collision detection
   }
 
   private updateRotatingPlatform(platform: Platform, deltaTime: number): void {
@@ -736,6 +737,8 @@ export class Level {
         platform.mesh.rotation.z = platform.currentRotation;
         break;
     }
+
+    platform.mesh.updateMatrixWorld(true); // Update world matrix for collision detection
   }
 
   private updateMovingPlatform(platform: Platform, deltaTime: number): void {
