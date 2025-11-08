@@ -1,6 +1,7 @@
 // Service Worker for Astrobot Mobile PWA
-// IMPORTANT: Update this version number with each deployment to force cache refresh
-const VERSION = '1.0.1';
+// VERSION is automatically injected during build by scripts/inject-version.js
+// Format: YYYY-MM-DD-commithash (e.g., '2025-11-08-a1b2c3d')
+const VERSION = 'dev-local';
 const CACHE_NAME = `astrobot-v${VERSION}`;
 const RUNTIME_CACHE = `astrobot-runtime-v${VERSION}`;
 
