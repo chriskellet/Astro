@@ -154,12 +154,12 @@ export class EnemyFactory {
       const z = Math.sin(angle) * 0.6;
       spike.position.set(x, 0, z);
 
-      // Rotate to point radially outward
-      // Cone points up (+Y) by default
-      // First tilt it 90° around X to make it point forward along +Z
-      spike.rotation.x = -Math.PI / 2;
-      // Then rotate around Y by the angle to point it radially outward
-      spike.rotation.y = angle;
+      // Make the spike point radially outward from center
+      // lookAt a point further out in the same direction
+      const targetPoint = new THREE.Vector3(x * 2, 0, z * 2);
+      spike.lookAt(targetPoint);
+      // Cone points up by default, so rotate it 90° to align with lookAt direction
+      spike.rotateX(Math.PI / 2);
 
       spike.castShadow = true;
       spikeGroup.add(spike);
