@@ -10,7 +10,7 @@ export class Player {
   private particles: ParticleSystem;
   private moveSpeed: number = 8;
   private jumpForce: number = 12;
-  private boosterThrust: number = 15;
+  private boosterThrust: number = 25;
   private radius: number = 0.5;
   private height: number = 1.5;
   private camera: THREE.Camera;
@@ -18,6 +18,8 @@ export class Player {
   private leftFootFlame!: THREE.Mesh;
   private rightFootFlame!: THREE.Mesh;
   private lastJumpState: boolean = false;
+  private rocketJumpAvailable: boolean = true;
+  private lastBoosterState: boolean = false;
 
   constructor(physics: Physics, camera: THREE.Camera, particles: ParticleSystem) {
     this.physics = physics;
@@ -195,9 +197,10 @@ export class Player {
 
     this.state.isJumping = !collision.grounded;
 
-    // Reset double jump when grounded
+    // Reset double jump and rocket jump when grounded
     if (collision.grounded) {
       this.state.doubleJumpUsed = false;
+      this.rocketJumpAvailable = true;
     }
 
     // Jump (only trigger on new press, not held)
@@ -210,10 +213,16 @@ export class Player {
     }
     this.lastJumpState = controls.jump;
 
-    // Rocket Booster
-    if (controls.booster) {
+    // Rocket Booster (can only be activated once per jump)
+    if (controls.booster && !this.lastBoosterState && this.rocketJumpAvailable) {
+      // First press - activate rocket jump and make it unavailable until grounded
+      this.rocketJumpAvailable = false;
       this.state.isBoosterActive = true;
-      // Apply upward thrust while maintaining control
+    }
+
+    // Continue applying thrust while booster button is held and rocket jump is active
+    if (controls.booster && this.state.isBoosterActive) {
+      // Apply upward thrust to counteract gravity and move upwards
       this.state.velocity.y += this.boosterThrust * deltaTime;
 
       // Emit flame particles
@@ -240,12 +249,15 @@ export class Player {
       const flameScale = 1 + Math.sin(Date.now() * 0.02) * 0.3;
       this.leftFootFlame.scale.set(1, flameScale, 1);
       this.rightFootFlame.scale.set(1, flameScale, 1);
-    } else {
+    } else if (!controls.booster) {
+      // Button released - deactivate booster
       this.state.isBoosterActive = false;
       // Hide flames
       (this.leftFootFlame.material as THREE.MeshBasicMaterial).opacity = 0;
       (this.rightFootFlame.material as THREE.MeshBasicMaterial).opacity = 0;
     }
+
+    this.lastBoosterState = controls.booster;
 
     // Keep within boundaries
     this.physics.checkBoundary(this.state.position, 50);
