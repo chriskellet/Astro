@@ -76,7 +76,7 @@ export class Level {
       collectibles,
       enemies,
       chickenBot,
-      startPosition: new THREE.Vector3(0, 6, 0),
+      startPosition: new THREE.Vector3(0, 7, 0),
       endPosition: new THREE.Vector3(35, 10, 5),
     };
   }

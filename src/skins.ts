@@ -125,6 +125,54 @@ export const AVAILABLE_SKINS: SkinDefinition[] = [
       eyeEmissive: 0x444444, // Dark glow
     },
   },
+  {
+    id: 'knuckles',
+    name: 'Knuckles',
+    colors: {
+      base: 0xFF0000,        // Red (Knuckles' color)
+      accent: 0xFFFFFF,      // White (gloves)
+      secondary: 0x8B0000,   // Dark red (shoes)
+      tertiary: 0xFFD700,    // Gold (buckles)
+      eye: 0x9400D3,         // Purple eyes
+      eyeEmissive: 0x9400D3, // Purple glow
+    },
+  },
+  {
+    id: 'shadow',
+    name: 'Shadow',
+    colors: {
+      base: 0x1A1A1A,        // Black/dark gray (Shadow's color)
+      accent: 0xFF0000,      // Red (stripes/shoes)
+      secondary: 0xFFFFFF,   // White (chest/gloves)
+      tertiary: 0xFFD700,    // Gold (rings)
+      eye: 0xFF0000,         // Red eyes
+      eyeEmissive: 0xFF0000, // Red glow
+    },
+  },
+  {
+    id: 'rouge',
+    name: 'Rouge',
+    colors: {
+      base: 0xFFFFFF,        // White (Rouge's fur)
+      accent: 0xFF1493,      // Hot pink (outfit)
+      secondary: 0x000000,   // Black (details)
+      tertiary: 0x4169E1,    // Blue (eye shadow)
+      eye: 0x00CED1,         // Turquoise eyes
+      eyeEmissive: 0x00CED1, // Turquoise glow
+    },
+  },
+  {
+    id: 'silver',
+    name: 'Silver',
+    colors: {
+      base: 0xC0C0C0,        // Silver gray (Silver's color)
+      accent: 0xFFD700,      // Gold (accents)
+      secondary: 0xFFFFFF,   // White (gloves/chest)
+      tertiary: 0x00BFFF,    // Cyan (psychic aura)
+      eye: 0xFFD700,         // Gold eyes
+      eyeEmissive: 0xFFD700, // Gold glow
+    },
+  },
 ];
 
 /**
@@ -145,7 +193,7 @@ export function getDefaultSkin(): SkinDefinition {
  * Get the collectible type for a skin
  * Mario, Luigi collect coins
  * Toad, Yoshi, Bowser collect stars
- * Sonic, Amy, and Tails collect rings
+ * Sonic, Amy, Tails, Knuckles, Shadow, Rouge, Silver collect rings
  * Steve collects TNT
  * Others collect orbs
  */
@@ -154,7 +202,7 @@ export function getCollectibleTypeForSkin(skinId: string): CollectibleType {
     return 'coin';
   } else if (['toad', 'yoshi', 'bowser'].includes(skinId)) {
     return 'star';
-  } else if (['sonic', 'amy', 'tails'].includes(skinId)) {
+  } else if (['sonic', 'amy', 'tails', 'knuckles', 'shadow', 'rouge', 'silver'].includes(skinId)) {
     return 'ring';
   } else if (skinId === 'steve') {
     return 'tnt';

@@ -15,6 +15,10 @@ const SKIN_EMOJIS: Record<string, string> = {
   bowser: '🐢',
   toad: '🍄',
   yoshi: '🦕',
+  knuckles: '🔴',
+  shadow: '⚫',
+  rouge: '🦇',
+  silver: '⚪',
 };
 
 const SKIN_DESCRIPTIONS: Record<string, string> = {
@@ -28,6 +32,10 @@ const SKIN_DESCRIPTIONS: Record<string, string> = {
   bowser: 'King of the Koopas',
   toad: 'Mushroom hero',
   yoshi: 'Friendly dinosaur',
+  knuckles: 'Treasure hunter',
+  shadow: 'Ultimate lifeform',
+  rouge: 'Jewel thief',
+  silver: 'Psychic hedgehog',
 };
 
 // Wait for DOM to be ready
