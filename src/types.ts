@@ -17,6 +17,24 @@ export interface PlayerState {
   score: number;
 }
 
+export interface SkinDefinition {
+  id: string;
+  name: string;
+  colors: {
+    base: number;           // Main body color
+    accent: number;         // Accent stripes/details
+    secondary: number;      // Panels and secondary details
+    tertiary: number;       // Additional details
+    eye: number;            // Eye color
+    eyeEmissive: number;    // Eye glow color
+  };
+  properties?: {
+    metalness?: number;
+    roughness?: number;
+    emissiveIntensity?: number;
+  };
+}
+
 export interface Controls {
   left: boolean;
   right: boolean;
