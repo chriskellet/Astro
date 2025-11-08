@@ -1,6 +1,32 @@
 import { Game } from './Game';
 import { AVAILABLE_SKINS, getSkinById } from './skins';
 
+// Register Service Worker for PWA support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker registered:', registration.scope);
+
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New service worker available, could show update notification
+                console.log('New version available! Refresh to update.');
+              }
+            });
+          }
+        });
+      })
+      .catch(error => {
+        console.log('ServiceWorker registration failed:', error);
+      });
+  });
+}
+
 let selectedSkinId: string | null = null;
 
 // Skin emoji mapping for visual representation
