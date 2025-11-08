@@ -19,13 +19,38 @@ export class ParticleSystem {
     this.scene = scene;
   }
 
-  public emitFlame(position: THREE.Vector3, count: number = 3): void {
-    for (let i = 0; i < count; i++) {
-      const velocity = new THREE.Vector3(
-        (Math.random() - 0.5) * 2,
-        -8 + Math.random() * 2, // Downward for rocket flames
-        (Math.random() - 0.5) * 2
-      );
+  public emitFlame(position: THREE.Vector3, directionOrCount?: THREE.Vector3 | number, count: number = 3): void {
+    // Handle overloaded parameter
+    let direction: THREE.Vector3 | undefined;
+    let particleCount = count;
+
+    if (typeof directionOrCount === 'number') {
+      // Old signature: emitFlame(position, count)
+      particleCount = directionOrCount;
+      direction = undefined;
+    } else if (directionOrCount instanceof THREE.Vector3) {
+      // New signature: emitFlame(position, direction, count)
+      direction = directionOrCount;
+    }
+
+    for (let i = 0; i < particleCount; i++) {
+      let velocity: THREE.Vector3;
+
+      if (direction) {
+        // Fire breather - emit in direction
+        const spread = 0.3;
+        velocity = direction.clone().multiplyScalar(5 + Math.random() * 3);
+        velocity.x += (Math.random() - 0.5) * spread;
+        velocity.y += (Math.random() - 0.5) * spread;
+        velocity.z += (Math.random() - 0.5) * spread;
+      } else {
+        // Rocket flames - emit downward
+        velocity = new THREE.Vector3(
+          (Math.random() - 0.5) * 2,
+          -8 + Math.random() * 2,
+          (Math.random() - 0.5) * 2
+        );
+      }
 
       const particle: Particle = {
         position: position.clone(),
@@ -108,6 +133,28 @@ export class ParticleSystem {
         maxLifetime: 0.6 + Math.random() * 0.4,
         size: 0.15 + Math.random() * 0.1,
         color: new THREE.Color().setHSL(0.6, 0.8, 0.5),
+      };
+
+      this.particles.push(particle);
+      this.createParticleMesh(particle);
+    }
+  }
+
+  public emitEnemyDefeatedEffect(position: THREE.Vector3, color: THREE.Color): void {
+    for (let i = 0; i < 20; i++) {
+      const velocity = new THREE.Vector3(
+        (Math.random() - 0.5) * 6,
+        Math.random() * 6,
+        (Math.random() - 0.5) * 6
+      );
+
+      const particle: Particle = {
+        position: position.clone(),
+        velocity,
+        lifetime: 0,
+        maxLifetime: 0.5 + Math.random() * 0.3,
+        size: 0.12 + Math.random() * 0.08,
+        color: color.clone(),
       };
 
       this.particles.push(particle);

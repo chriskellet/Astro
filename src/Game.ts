@@ -25,6 +25,8 @@ export class Game {
   private levelElement: HTMLElement | null;
   private currentLevel: number;
   private maxLevels: number = 3;
+  private damageCooldown: number = 0;
+  private chickenBotCooldown: number = 0;
 
   constructor(config: GameConfig) {
     this.canvas = config.canvas;
@@ -191,14 +193,14 @@ export class Game {
     // Update player
     this.player.update(controls, deltaTime, this.level.data.platforms);
 
-    // Update level
-    this.level.update(deltaTime);
+    // Get player position (used throughout update)
+    const playerPos = this.player.getPosition();
+
+    // Update level (enemies need player position and particles)
+    this.level.update(deltaTime, playerPos, this.particles);
 
     // Update particles
     this.particles.update(deltaTime);
-
-    // Check collectibles
-    const playerPos = this.player.getPosition();
 
     // Emit particles for collected items
     this.level.data.collectibles.forEach((collectible) => {
@@ -219,6 +221,17 @@ export class Game {
       this.player.addScore(scoreGained);
       this.updateUI();
     }
+
+    // Update cooldowns
+    if (this.damageCooldown > 0) {
+      this.damageCooldown -= deltaTime;
+    }
+    if (this.chickenBotCooldown > 0) {
+      this.chickenBotCooldown -= deltaTime;
+    }
+
+    // Check enemy collisions
+    this.checkEnemyCollisions();
 
     // Check for death (falling off)
     if (playerPos.y < -50) {
@@ -243,6 +256,124 @@ export class Game {
     }
     if (this.levelElement) {
       this.levelElement.textContent = `Level ${this.currentLevel}`;
+    }
+
+    // Update health display if it exists
+    const healthElement = document.getElementById('health');
+    if (healthElement) {
+      healthElement.textContent = `Health: ${Math.max(0, this.player.state.health)}`;
+    }
+  }
+
+  private checkEnemyCollisions(): void {
+    const playerPos = this.player.getPosition();
+    const playerVel = this.player.state.velocity;
+    const playerRadius = this.player.getRadius();
+
+    this.level.data.enemies.forEach((enemy) => {
+      if (!enemy.isActive) return;
+
+      const distance = playerPos.distanceTo(enemy.position);
+      const collisionDistance = playerRadius + 0.6; // enemy radius ~0.6
+
+      if (distance < collisionDistance) {
+        // Check if player is jumping on top of enemy
+        const isAboveEnemy = playerPos.y > enemy.position.y + 0.3;
+        const isFalling = playerVel.y < 0;
+
+        if (isAboveEnemy && isFalling) {
+          // Special case for spiky bot - can only jump on when spikes are in
+          if (enemy.type === 'spiky' && enemy.spikesOut) {
+            // Spikes are out - player takes damage
+            this.handlePlayerDamage(enemy);
+            return;
+          }
+
+          // Successfully jumped on enemy - defeat it
+          enemy.isActive = false;
+          enemy.health = 0;
+
+          // Give player a bounce
+          this.player.state.velocity.y = 8;
+
+          // Emit defeat particles with enemy color
+          const enemyColor = this.getEnemyColor(enemy.type);
+          this.particles.emitEnemyDefeatedEffect(enemy.position, enemyColor);
+
+          // Award score
+          this.player.addScore(50);
+          this.updateUI();
+
+          // Hide enemy mesh
+          enemy.mesh.visible = false;
+        } else {
+          // Player touched enemy from side/below - take damage
+          this.handlePlayerDamage(enemy);
+        }
+      }
+    });
+
+    // Chicken bot interaction - gives health/speed boost
+    if (this.level.data.chickenBot && this.level.data.chickenBot.isActive) {
+      const distance = playerPos.distanceTo(this.level.data.chickenBot.position);
+      if (distance < playerRadius + 0.7 && this.chickenBotCooldown <= 0) {
+        // Give player a small health boost and score
+        this.player.state.health = Math.min(100, this.player.state.health + 10);
+        this.player.addScore(20);
+        this.updateUI();
+
+        // Emit happy particles
+        this.particles.emitCollectEffect(this.level.data.chickenBot.position, 10);
+
+        // Set cooldown so chicken bot doesn't give continuous health
+        this.chickenBotCooldown = 3; // 3 second cooldown
+      }
+    }
+  }
+
+  private getEnemyColor(type: string): THREE.Color {
+    switch (type) {
+      case 'pusher':
+        return new THREE.Color(0xff4444);
+      case 'spiky':
+        return new THREE.Color(0x8844ff);
+      case 'firebreather':
+        return new THREE.Color(0xff8800);
+      default:
+        return new THREE.Color(0xffffff);
+    }
+  }
+
+  private handlePlayerDamage(enemy: any): void {
+    // Check damage cooldown to prevent rapid damage
+    if (this.damageCooldown > 0) {
+      return;
+    }
+
+    // Reduce player health
+    this.player.state.health -= 20;
+    this.updateUI();
+
+    // Set damage cooldown (1 second invulnerability)
+    this.damageCooldown = 1;
+
+    // Knock player back
+    const knockbackDirection = new THREE.Vector3()
+      .subVectors(this.player.state.position, enemy.position)
+      .normalize();
+    knockbackDirection.y = 2; // Add upward knockback
+    knockbackDirection.multiplyScalar(8);
+
+    this.player.state.velocity.x = knockbackDirection.x;
+    this.player.state.velocity.z = knockbackDirection.z;
+    this.player.state.velocity.y = knockbackDirection.y;
+
+    // Emit damage particles
+    this.particles.emitDeathEffect(this.player.state.position);
+
+    // Check if player died
+    if (this.player.state.health <= 0) {
+      this.handleDeath();
     }
   }
 
@@ -286,6 +417,10 @@ export class Game {
       // Reset player to start of current level
       this.player.state.position.copy(this.level.data.startPosition);
       this.player.state.velocity.set(0, 0, 0);
+      this.player.state.health = 100; // Reset health
+
+      // Update UI to show reset health
+      this.updateUI();
 
       // Fade back in
       setTimeout(() => {
