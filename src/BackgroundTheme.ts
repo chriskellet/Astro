@@ -164,13 +164,14 @@ export class BackgroundTheme {
     try {
       // Large ground plane extending to horizon
       // Make it very long in Z to cover the view from the angled camera
-      const groundGeometry = new THREE.PlaneGeometry(2000, 3000, 100, 120);
+      // Reduced size and repositioned to be within fog range (800 units from camera at Z:15)
+      const groundGeometry = new THREE.PlaneGeometry(2000, 800, 100, 40);
       const groundMaterial = new THREE.MeshBasicMaterial({
         vertexColors: true,
       });
       const ground = new THREE.Mesh(groundGeometry, groundMaterial);
       ground.rotation.x = -Math.PI / 2;
-      ground.position.set(0, -60, 100); // Position it forward along the level path (center at Z:100 extends -1400 to 1600)
+      ground.position.set(0, -60, -150); // Positioned to extend from Z:-550 to Z:250, within fog range
 
       // Add procedural color variation to create field patterns
       const colors: number[] = [];
@@ -322,8 +323,8 @@ export class BackgroundTheme {
       });
     }
 
-    // Distant water/ocean floor plane with waves
-    const waterGeometry = new THREE.PlaneGeometry(300, 200, 20, 20);
+    // Distant water/ocean floor plane with waves (expanded to be more visible)
+    const waterGeometry = new THREE.PlaneGeometry(2000, 800, 20, 20);
     const waterMaterial = new THREE.MeshBasicMaterial({
       color: 0x3a6ea5,
       transparent: true,
@@ -331,7 +332,7 @@ export class BackgroundTheme {
     });
     const water = new THREE.Mesh(waterGeometry, waterMaterial);
     water.rotation.x = -Math.PI / 2;
-    water.position.set(0, -30, -100);
+    water.position.set(0, -40, -150); // Positioned to be visible within fog range
     this.addBackgroundObject(water);
   }
 
@@ -399,6 +400,16 @@ export class BackgroundTheme {
         crystal.position.y += Math.sin(Date.now() * 0.001) * dt * 0.5;
       });
     }
+
+    // Rocky/snowy ground plane
+    const groundGeometry = new THREE.PlaneGeometry(2000, 800, 50, 50);
+    const groundMaterial = new THREE.MeshBasicMaterial({
+      color: 0xe0e0e0, // Light gray for snow/rock
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(0, -50, -150); // Positioned to be visible within fog range
+    this.addBackgroundObject(ground);
   }
 
   private createTwilightBackground(): void {
@@ -474,6 +485,16 @@ export class BackgroundTheme {
         bat.rotation.y = time + angleOffset + Math.PI / 2;
       });
     }
+
+    // Dark forest floor ground plane
+    const groundGeometry = new THREE.PlaneGeometry(2000, 800, 50, 50);
+    const groundMaterial = new THREE.MeshBasicMaterial({
+      color: 0x2d1f3d, // Dark purple-brown for twilight forest
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(0, -40, -150); // Positioned to be visible within fog range
+    this.addBackgroundObject(ground);
   }
 
   private createSpaceBackground(): void {
@@ -559,6 +580,18 @@ export class BackgroundTheme {
       spaceStation.rotation.y += dt * 0.3;
       spaceStation.position.y = Math.sin(Date.now() * 0.0005) * 5;
     });
+
+    // Deep space nebula ground plane
+    const groundGeometry = new THREE.PlaneGeometry(2000, 800, 50, 50);
+    const groundMaterial = new THREE.MeshBasicMaterial({
+      color: 0x1a0a2e, // Deep purple space color
+      transparent: true,
+      opacity: 0.7,
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(0, -50, -150); // Positioned to be visible within fog range
+    this.addBackgroundObject(ground);
   }
 
   // Helper methods to create various objects
