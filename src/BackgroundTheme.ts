@@ -263,16 +263,17 @@ export class BackgroundTheme {
     // Floating colorful balloons in the distance
     for (let i = 0; i < 4; i++) {
       const balloon = this.createBalloon();
+      const baseY = -5 + Math.random() * 10;
       balloon.position.set(
         -60 + i * 40,
-        -5 + Math.random() * 10,
+        baseY,
         -50 - Math.random() * 30
       );
       balloon.scale.setScalar(0.7);
       const bobSpeed = 0.6 + i * 0.15;
       const bobOffset = i * 1.5;
       this.addBackgroundObject(balloon, (dt) => {
-        balloon.position.y = -5 + Math.random() * 10 + Math.sin(Date.now() * 0.001 * bobSpeed + bobOffset) * 2;
+        balloon.position.y = baseY + Math.sin(Date.now() * 0.001 * bobSpeed + bobOffset) * 2;
         balloon.rotation.y += dt * 0.2;
       });
     }
