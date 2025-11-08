@@ -163,15 +163,14 @@ export class BackgroundTheme {
 
     try {
       // Large ground plane extending to horizon
-      // Position it centered under the level, extending forward and back
-      // Width (X) = 1200, Depth (Z when rotated) = 1200 for good coverage
-      const groundGeometry = new THREE.PlaneGeometry(1200, 1200, 80, 80);
+      // Make it very long in Z to cover the view from the angled camera
+      const groundGeometry = new THREE.PlaneGeometry(2000, 3000, 100, 120);
       const groundMaterial = new THREE.MeshBasicMaterial({
         vertexColors: true,
       });
       const ground = new THREE.Mesh(groundGeometry, groundMaterial);
       ground.rotation.x = -Math.PI / 2;
-      ground.position.set(0, -60, 50); // Position it forward so it's under the level path
+      ground.position.set(0, -60, 100); // Position it further forward
 
       // Add procedural color variation to create field patterns
       const colors: number[] = [];
