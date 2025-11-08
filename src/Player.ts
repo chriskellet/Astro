@@ -46,6 +46,8 @@ export class Player {
   private animationTime: number = 0;
   private walkCycle: number = 0;
   private isWalking: boolean = false;
+  private targetRotationY: number = 0;
+  private rotationSpeed: number = 8; // radians per second
 
   constructor(physics: Physics, camera: THREE.Camera, particles: ParticleSystem) {
     this.physics = physics;
@@ -402,14 +404,16 @@ export class Player {
       this.state.velocity.x = moveVector.x * this.moveSpeed;
       this.state.velocity.z = moveVector.z * this.moveSpeed;
 
-      // Rotate player to face movement direction
-      const angle = Math.atan2(moveVector.x, moveVector.z);
-      this.mesh.rotation.y = angle;
+      // Set target rotation to face movement direction
+      this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
     } else {
       // Apply friction
       this.state.velocity.x *= 0.85;
       this.state.velocity.z *= 0.85;
     }
+
+    // Smoothly interpolate rotation towards target
+    this.updateRotation(deltaTime);
 
     // Apply gravity
     this.physics.applyGravity(this.state.velocity, deltaTime);
@@ -694,6 +698,30 @@ export class Player {
       this.bodyParts.rightUpperLeg.rotation.z *= 0.95;
       this.bodyParts.head.rotation.x *= 0.95;
     }
+  }
+
+  private updateRotation(deltaTime: number): void {
+    // Calculate the shortest rotation difference
+    let rotationDiff = this.targetRotationY - this.mesh.rotation.y;
+
+    // Normalize the angle difference to [-π, π] to take the shortest path
+    while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
+    while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
+
+    // Smoothly interpolate rotation
+    const maxRotationStep = this.rotationSpeed * deltaTime;
+
+    if (Math.abs(rotationDiff) < maxRotationStep) {
+      // Close enough, snap to target
+      this.mesh.rotation.y = this.targetRotationY;
+    } else {
+      // Rotate towards target at constant speed
+      this.mesh.rotation.y += Math.sign(rotationDiff) * maxRotationStep;
+    }
+
+    // Normalize final rotation to [-π, π]
+    while (this.mesh.rotation.y > Math.PI) this.mesh.rotation.y -= Math.PI * 2;
+    while (this.mesh.rotation.y < -Math.PI) this.mesh.rotation.y += Math.PI * 2;
   }
 
   private updateCamera(): void {
