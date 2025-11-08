@@ -29,8 +29,8 @@ export class Player {
 
   // Velocity-based thrust parameters
   private maxUpwardVelocity: number = 8; // Maximum upward speed (m/s)
-  private minThrust: number = 28; // Minimum thrust (slightly above gravity for gentle rise)
-  private maxThrust: number = 70; // Maximum thrust (for recovery from falls)
+  private fallRecoveryTime: number = 1.0; // Time to recover from fall to zero velocity (seconds)
+  private riseTime: number = 0.5; // Time to accelerate to max velocity (seconds)
 
   // Animation components for professional character model
   private bodyParts: {
@@ -543,22 +543,39 @@ export class Player {
         thrustMultiplier = Math.random() * 0.3;
       }
 
-      // Calculate velocity-based thrust
-      let thrust;
+      // PID-style velocity controller for smooth, controlled flight
+      const gravity = 25; // Magnitude of gravity (matches Physics.ts)
+
+      // Determine target velocity based on current state
+      let targetVelocity;
+      let timeToTarget;
+
       if (this.state.velocity.y < 0) {
-        // Falling - increase thrust based on how fast we're falling
-        // The faster we fall, the more thrust we apply (up to maxThrust)
-        const fallSpeedFactor = Math.min(1, Math.abs(this.state.velocity.y) / 10);
-        thrust = this.minThrust + (this.maxThrust - this.minThrust) * fallSpeedFactor;
+        // Falling - target is to stop falling (reach 0 m/s)
+        targetVelocity = 0;
+        timeToTarget = this.fallRecoveryTime;
+      } else if (this.state.velocity.y < this.maxUpwardVelocity) {
+        // Rising but below max - target is max upward velocity
+        targetVelocity = this.maxUpwardVelocity;
+        timeToTarget = this.riseTime;
       } else {
-        // Rising - reduce thrust as we approach max velocity
-        // This prevents us from going too high while still allowing controlled ascent
-        const velocityFactor = Math.max(0, 1 - this.state.velocity.y / this.maxUpwardVelocity);
-        thrust = this.minThrust + (this.maxThrust - this.minThrust) * velocityFactor;
+        // At or above max velocity - maintain current velocity
+        targetVelocity = this.state.velocity.y;
+        timeToTarget = 1.0; // Doesn't matter, error will be 0
       }
 
-      // Apply upward thrust to counteract gravity and move upwards
-      this.state.velocity.y += thrust * deltaTime * thrustMultiplier;
+      // Calculate acceleration needed to reach target velocity
+      const velocityError = targetVelocity - this.state.velocity.y;
+      const requiredAcceleration = velocityError / timeToTarget;
+
+      // Total thrust = required acceleration + gravity compensation
+      const thrust = requiredAcceleration + gravity;
+
+      // Clamp thrust to reasonable bounds (prevent extreme values)
+      const clampedThrust = Math.max(0, Math.min(100, thrust));
+
+      // Apply upward thrust
+      this.state.velocity.y += clampedThrust * deltaTime * thrustMultiplier;
 
       // Emit flame and smoke particles from feet
       const leftFootPos = this.state.position.clone();
