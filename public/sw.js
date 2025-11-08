@@ -1,12 +1,15 @@
 // Service Worker for Astrobot Mobile PWA
-const CACHE_NAME = 'astrobot-v1';
-const RUNTIME_CACHE = 'astrobot-runtime-v1';
+// VERSION is automatically injected during build by scripts/inject-version.js
+// Format: YYYY-MM-DD-commithash (e.g., '2025-11-08-a1b2c3d')
+const VERSION = 'dev-local';
+const CACHE_NAME = `astrobot-v${VERSION}`;
+const RUNTIME_CACHE = `astrobot-runtime-v${VERSION}`;
 
 // Core assets that should be cached on install
 const CORE_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  '/Astro/',
+  '/Astro/index.html',
+  '/Astro/manifest.json'
 ];
 
 // Install event - cache core assets
@@ -24,18 +27,22 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activating...');
+  console.log(`Service Worker: Activating version ${VERSION}...`);
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cache => {
+          // Delete ALL old caches that don't match current version
           if (cache !== CACHE_NAME && cache !== RUNTIME_CACHE) {
             console.log('Service Worker: Clearing old cache:', cache);
             return caches.delete(cache);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      console.log('Service Worker: Claiming clients...');
+      return self.clients.claim();
+    })
   );
 });
 
@@ -46,55 +53,63 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const url = new URL(event.request.url);
+
+  // Network-first strategy for HTML files to ensure fresh content
+  if (event.request.headers.get('accept')?.includes('text/html') ||
+      url.pathname.endsWith('.html') ||
+      url.pathname.endsWith('/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Cache the new version
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try cache
+          return caches.match(event.request)
+            .then(cachedResponse => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              return new Response('Offline - Content not available', {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: new Headers({
+                  'Content-Type': 'text/html'
+                })
+              });
+            });
+        })
+    );
+    return;
+  }
+
+  // Stale-while-revalidate for other assets (JS, CSS, images, etc.)
   event.respondWith(
     caches.match(event.request)
       .then(cachedResponse => {
-        if (cachedResponse) {
-          // Return cached version and update cache in background
-          const fetchPromise = fetch(event.request)
-            .then(networkResponse => {
-              // Cache successful responses
-              if (networkResponse && networkResponse.status === 200) {
-                const responseToCache = networkResponse.clone();
-                caches.open(RUNTIME_CACHE).then(cache => {
-                  cache.put(event.request, responseToCache);
-                });
-              }
-              return networkResponse;
-            })
-            .catch(() => cachedResponse); // Return cached if network fails
-
-          return cachedResponse;
-        }
-
-        // Not in cache, fetch from network
-        return fetch(event.request)
-          .then(response => {
-            // Don't cache non-successful responses
-            if (!response || response.status !== 200 || response.type === 'error') {
-              return response;
+        const fetchPromise = fetch(event.request)
+          .then(networkResponse => {
+            // Cache successful responses
+            if (networkResponse && networkResponse.status === 200) {
+              const responseToCache = networkResponse.clone();
+              caches.open(RUNTIME_CACHE).then(cache => {
+                cache.put(event.request, responseToCache);
+              });
             }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            // Cache the fetched resource
-            caches.open(RUNTIME_CACHE).then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-
-            return response;
+            return networkResponse;
           })
-          .catch(() => {
-            // Return a custom offline page or error if you have one
-            return new Response('Offline - Content not available', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
-              })
-            });
-          });
+          .catch(() => cachedResponse); // Return cached if network fails
+
+        // Return cached immediately if available, or wait for network
+        return cachedResponse || fetchPromise;
       })
   );
 });

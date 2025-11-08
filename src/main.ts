@@ -4,9 +4,16 @@ import { AVAILABLE_SKINS, getSkinById } from './skins';
 // Register Service Worker for PWA support
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('/Astro/sw.js')
       .then(registration => {
         console.log('ServiceWorker registered:', registration.scope);
+
+        // Check for updates every minute when page is visible
+        setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            registration.update();
+          }
+        }, 60000);
 
         // Check for updates
         registration.addEventListener('updatefound', () => {
@@ -14,8 +21,8 @@ if ('serviceWorker' in navigator) {
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New service worker available, could show update notification
-                console.log('New version available! Refresh to update.');
+                // New service worker available - show update notification
+                showUpdateNotification();
               }
             });
           }
@@ -25,6 +32,55 @@ if ('serviceWorker' in navigator) {
         console.log('ServiceWorker registration failed:', error);
       });
   });
+}
+
+function showUpdateNotification() {
+  // Create update notification banner
+  const notification = document.createElement('div');
+  notification.id = 'update-notification';
+  notification.innerHTML = `
+    <div style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #00a8ff 0%, #0066cc 100%);
+      color: white;
+      padding: 12px 20px;
+      text-align: center;
+      z-index: 10000;
+      font-size: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    ">
+      <span>🎮 New version available!</span>
+      <button onclick="location.reload()" style="
+        background: white;
+        color: #0066cc;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 14px;
+      ">Update Now</button>
+      <button onclick="this.parentElement.parentElement.remove()" style="
+        background: transparent;
+        color: white;
+        border: 1px solid white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      ">Later</button>
+    </div>
+  `;
+  document.body.appendChild(notification);
+
+  console.log('New version available! Click "Update Now" to refresh.');
 }
 
 let selectedSkinId: string | null = null;

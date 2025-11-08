@@ -36,6 +36,14 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Git info available for version injection
+          CI: true
+
+      - name: Display injected version
+        run: |
+          echo "Service worker version:"
+          grep "const VERSION = " dist/sw.js || echo "Version not found in dist/sw.js"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
