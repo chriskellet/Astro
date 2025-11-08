@@ -13,6 +13,8 @@ const SKIN_EMOJIS: Record<string, string> = {
   amy: '💗',
   tails: '🦊',
   bowser: '🐢',
+  toad: '🍄',
+  yoshi: '🦕',
 };
 
 const SKIN_DESCRIPTIONS: Record<string, string> = {
@@ -24,6 +26,8 @@ const SKIN_DESCRIPTIONS: Record<string, string> = {
   amy: 'Pink powerhouse',
   tails: 'Flying fox',
   bowser: 'King of the Koopas',
+  toad: 'Mushroom hero',
+  yoshi: 'Friendly dinosaur',
 };
 
 // Wait for DOM to be ready

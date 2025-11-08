@@ -101,6 +101,30 @@ export const AVAILABLE_SKINS: SkinDefinition[] = [
       eyeEmissive: 0xFF0000, // Red glow
     },
   },
+  {
+    id: 'toad',
+    name: 'Toad',
+    colors: {
+      base: 0xFFFFFF,        // White (body)
+      accent: 0xFF0000,      // Red (mushroom cap)
+      secondary: 0x0066FF,   // Blue (vest)
+      tertiary: 0xFFD700,    // Gold (buttons)
+      eye: 0x000000,         // Black eyes
+      eyeEmissive: 0x333333, // Dark glow
+    },
+  },
+  {
+    id: 'yoshi',
+    name: 'Yoshi',
+    colors: {
+      base: 0x00CC00,        // Green (Yoshi's body)
+      accent: 0xFF0000,      // Red (saddle/shoes)
+      secondary: 0xFFFFFF,   // White (belly)
+      tertiary: 0xFFAA00,    // Orange (spikes on back)
+      eye: 0x000000,         // Black eyes
+      eyeEmissive: 0x444444, // Dark glow
+    },
+  },
 ];
 
 /**
@@ -119,15 +143,21 @@ export function getDefaultSkin(): SkinDefinition {
 
 /**
  * Get the collectible type for a skin
- * Mario, Luigi, and Bowser collect coins
+ * Mario, Luigi collect coins
+ * Toad, Yoshi, Bowser collect stars
  * Sonic, Amy, and Tails collect rings
+ * Steve collects TNT
  * Others collect orbs
  */
 export function getCollectibleTypeForSkin(skinId: string): CollectibleType {
-  if (['mario', 'luigi', 'bowser'].includes(skinId)) {
+  if (['mario', 'luigi'].includes(skinId)) {
     return 'coin';
+  } else if (['toad', 'yoshi', 'bowser'].includes(skinId)) {
+    return 'star';
   } else if (['sonic', 'amy', 'tails'].includes(skinId)) {
     return 'ring';
+  } else if (skinId === 'steve') {
+    return 'tnt';
   } else {
     return 'orb';
   }

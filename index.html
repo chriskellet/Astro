@@ -87,28 +87,42 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       z-index: 2000;
       color: white;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 20px;
+      overflow: hidden;
     }
 
     #skin-selection.hidden {
       display: none;
     }
 
+    .skin-selection-header {
+      flex-shrink: 0;
+      text-align: center;
+      padding: 20px;
+      width: 100%;
+    }
+
     #skin-selection h1 {
       font-size: 48px;
-      margin-bottom: 20px;
+      margin: 0 0 10px 0;
       text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
     }
 
     #skin-selection p {
       font-size: 20px;
-      margin-bottom: 40px;
+      margin: 0;
       opacity: 0.9;
+    }
+
+    .skin-grid-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 0 20px;
     }
 
     .skin-grid {
@@ -118,6 +132,15 @@
       max-width: 1200px;
       width: 100%;
       padding: 10px;
+      align-content: start;
+    }
+
+    .skin-selection-footer {
+      flex-shrink: 0;
+      padding: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
     }
 
     .skin-card {
@@ -180,7 +203,7 @@
     }
 
     .start-button {
-      margin-top: 40px;
+      margin: 0;
       padding: 15px 50px;
       font-size: 24px;
       font-weight: bold;
@@ -203,14 +226,20 @@
     }
 
     @media (max-width: 768px) {
+      .skin-selection-header {
+        padding: 15px;
+      }
+
       #skin-selection h1 {
         font-size: 28px;
-        margin-bottom: 10px;
       }
 
       #skin-selection p {
         font-size: 16px;
-        margin-bottom: 20px;
+      }
+
+      .skin-grid-container {
+        padding: 0 15px;
       }
 
       .skin-grid {
@@ -237,73 +266,86 @@
         font-size: 12px;
       }
 
+      .skin-selection-footer {
+        padding: 15px;
+      }
+
       .start-button {
-        margin-top: 20px;
         padding: 12px 40px;
         font-size: 20px;
       }
     }
 
     @media (orientation: landscape) and (max-height: 600px) {
-      #skin-selection {
-        justify-content: flex-start;
-        padding: 15px;
+      .skin-selection-header {
+        padding: 10px;
       }
 
       #skin-selection h1 {
         font-size: 24px;
-        margin-bottom: 8px;
       }
 
       #skin-selection p {
         font-size: 14px;
-        margin-bottom: 15px;
+      }
+
+      .skin-grid-container {
+        padding: 0 10px;
       }
 
       .skin-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
         max-width: 100%;
       }
 
       .skin-card {
-        padding: 12px 8px;
+        padding: 10px 6px;
       }
 
       .skin-preview {
-        width: 60px;
-        height: 60px;
-        font-size: 30px;
-        margin-bottom: 8px;
+        width: 50px;
+        height: 50px;
+        font-size: 25px;
+        margin-bottom: 6px;
       }
 
       .skin-name {
-        font-size: 14px;
-        margin-bottom: 5px;
+        font-size: 12px;
+        margin-bottom: 3px;
       }
 
       .skin-description {
-        font-size: 11px;
+        font-size: 10px;
+      }
+
+      .skin-selection-footer {
+        padding: 10px;
       }
 
       .start-button {
-        margin-top: 15px;
-        padding: 10px 35px;
-        font-size: 18px;
+        padding: 8px 30px;
+        font-size: 16px;
       }
     }
   </style>
 </head>
 <body>
   <div id="skin-selection">
-    <h1>Choose Your Character</h1>
-    <p>Select a skin to start your adventure!</p>
-
-    <div class="skin-grid" id="skin-grid">
-      <!-- Skins will be populated by JavaScript -->
+    <div class="skin-selection-header">
+      <h1>Choose Your Character</h1>
+      <p>Select a skin to start your adventure!</p>
     </div>
 
-    <button class="start-button" id="start-game">Start Game</button>
+    <div class="skin-grid-container">
+      <div class="skin-grid" id="skin-grid">
+        <!-- Skins will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <div class="skin-selection-footer">
+      <button class="start-button" id="start-game">Start Game</button>
+    </div>
   </div>
 
   <div id="loading" class="hidden">
