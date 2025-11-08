@@ -576,7 +576,7 @@ export class Player {
     this.lastBoosterState = controls.booster;
 
     // Keep within boundaries
-    this.physics.checkBoundary(this.state.position, 50);
+    this.physics.checkBoundary(this.state.position, 250);
 
     // Update mesh position with vertical offset so feet sit on ground
     this.mesh.position.copy(this.state.position);
