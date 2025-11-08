@@ -151,54 +151,90 @@ export class BackgroundTheme {
   }
 
   private createSunnyDayBackground(): void {
-    // Ground plane far below - patchwork fields
-    const groundGeometry = new THREE.PlaneGeometry(400, 400, 40, 40);
+    // Large ground plane extending to horizon
+    const groundGeometry = new THREE.PlaneGeometry(800, 600, 60, 60);
     const groundMaterial = new THREE.MeshBasicMaterial({
-      color: 0x7cb342,
-      wireframe: false,
+      vertexColors: true,
     });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.set(0, -60, -80);
+    ground.position.set(0, -60, -100);
 
-    // Add some variation to ground vertices for terrain feel
-    const vertices = groundGeometry.attributes.position;
-    for (let i = 0; i < vertices.count; i++) {
-      const y = Math.random() * 2;
-      vertices.setY(i, y);
+    // Add procedural color variation to create field patterns
+    const colors = [];
+    const color = new THREE.Color();
+    const fieldColors = [
+      new THREE.Color(0x8bc34a), // Light green
+      new THREE.Color(0x7cb342), // Medium green
+      new THREE.Color(0x689f38), // Dark green
+      new THREE.Color(0xaed581), // Bright green
+      new THREE.Color(0x9ccc65), // Yellow-green
+      new THREE.Color(0xcddc39), // Lime
+    ];
+
+    const positionAttribute = groundGeometry.attributes.position;
+    const gridSize = 20; // Size of each "field"
+
+    for (let i = 0; i < positionAttribute.count; i++) {
+      const x = positionAttribute.getX(i);
+      const z = positionAttribute.getZ(i);
+
+      // Determine which field this vertex belongs to
+      const fieldX = Math.floor(x / gridSize);
+      const fieldZ = Math.floor(z / gridSize);
+      const fieldIndex = (fieldX * 7 + fieldZ * 11) % fieldColors.length;
+
+      // Add some variation within the field
+      const variation = 0.9 + Math.random() * 0.2;
+      color.copy(fieldColors[fieldIndex]).multiplyScalar(variation);
+
+      colors.push(color.r, color.g, color.b);
+
+      // Add subtle height variation for terrain
+      const height = (Math.sin(x * 0.02) + Math.cos(z * 0.02)) * 1.5 + Math.random() * 0.5;
+      positionAttribute.setY(i, height);
     }
+
+    groundGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     groundGeometry.computeVertexNormals();
     this.addBackgroundObject(ground);
 
-    // Patchwork fields (different colored squares on the ground)
-    const fieldColors = [0x8bc34a, 0x7cb342, 0x689f38, 0xaed581, 0x9ccc65];
-    for (let x = -3; x < 4; x++) {
-      for (let z = -3; z < 4; z++) {
-        if (Math.random() > 0.3) {
-          const fieldGeometry = new THREE.PlaneGeometry(25, 25);
-          const fieldMaterial = new THREE.MeshBasicMaterial({
-            color: fieldColors[Math.floor(Math.random() * fieldColors.length)],
-          });
-          const field = new THREE.Mesh(fieldGeometry, fieldMaterial);
-          field.rotation.x = -Math.PI / 2;
-          field.position.set(x * 30, -59 + Math.random(), z * 30 - 80);
-          this.addBackgroundObject(field);
-        }
-      }
+    // Add some larger distinct field patches for variety
+    for (let i = 0; i < 20; i++) {
+      const fieldSize = 30 + Math.random() * 40;
+      const fieldGeometry = new THREE.PlaneGeometry(fieldSize, fieldSize, 4, 4);
+      const fieldColor = fieldColors[Math.floor(Math.random() * fieldColors.length)];
+      const fieldMaterial = new THREE.MeshBasicMaterial({
+        color: fieldColor,
+        transparent: true,
+        opacity: 0.6,
+      });
+      const field = new THREE.Mesh(fieldGeometry, fieldMaterial);
+      field.rotation.x = -Math.PI / 2;
+      field.position.set(
+        (Math.random() - 0.5) * 700,
+        -59,
+        -50 - Math.random() * 500
+      );
+
+      // Slight rotation for variety
+      field.rotation.z = Math.random() * Math.PI * 2;
+
+      this.addBackgroundObject(field);
     }
 
     // Distant mountain ranges on the horizon
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 12; i++) {
       const mountain = this.createMountain();
       mountain.position.set(
-        -150 + i * 35,
+        -200 + i * 40,
         -50,
-        -120 - Math.random() * 30
+        -200 - Math.random() * 100
       );
       mountain.scale.set(
-        20 + Math.random() * 15,
         25 + Math.random() * 20,
-        20 + Math.random() * 15
+        30 + Math.random() * 25,
+        25 + Math.random() * 20
       );
       // Lighter color for distant mountains (atmospheric perspective)
       const mountainMesh = mountain.children[0] as THREE.Mesh;
@@ -208,23 +244,23 @@ export class BackgroundTheme {
     }
 
     // Small clouds at mid-height (between camera and ground)
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 12; i++) {
       const cloud = this.createPuffyCloud();
       cloud.position.set(
-        (Math.random() - 0.5) * 200,
+        (Math.random() - 0.5) * 300,
         -10 + Math.random() * 20,
-        -60 - Math.random() * 60
+        -60 - Math.random() * 100
       );
       const driftSpeed = 0.2 + Math.random() * 0.3;
       this.addBackgroundObject(cloud, (dt) => {
         cloud.position.x += driftSpeed * dt * 2;
-        if (cloud.position.x > 120) {
-          cloud.position.x = -120;
+        if (cloud.position.x > 180) {
+          cloud.position.x = -180;
         }
       });
     }
 
-    // Floating colorful balloons in the distance (much smaller now)
+    // Floating colorful balloons in the distance
     for (let i = 0; i < 4; i++) {
       const balloon = this.createBalloon();
       balloon.position.set(
