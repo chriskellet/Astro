@@ -6,6 +6,7 @@ import { Physics } from './Physics';
 import { VirtualGamepad } from './VirtualGamepad';
 import { ParticleSystem } from './ParticleSystem';
 import { ScreenTransition } from './ScreenTransition';
+import { getCollectibleTypeForSkin } from './skins';
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -27,12 +28,14 @@ export class Game {
   private maxLevels: number = 3;
   private damageCooldown: number = 0;
   private chickenBotCooldown: number = 0;
+  private selectedSkin?: SkinDefinition;
 
   constructor(config: GameConfig, skin?: SkinDefinition) {
     this.canvas = config.canvas;
     this.lastTime = performance.now();
     this.running = false;
     this.currentLevel = 1;
+    this.selectedSkin = skin;
 
     // Get UI elements
     this.scoreElement = document.getElementById('score');
@@ -75,8 +78,9 @@ export class Game {
     // Lighting
     this.setupLighting();
 
-    // Level
-    this.level = new Level(this.scene, this.currentLevel);
+    // Level - pass collectible type based on skin
+    const collectibleType = skin ? getCollectibleTypeForSkin(skin.id) : 'orb';
+    this.level = new Level(this.scene, this.currentLevel, collectibleType);
 
     // Player - pass selected skin
     this.player = new Player(this.physics, this.camera, this.particles, skin);
@@ -392,7 +396,8 @@ export class Game {
       this.level.cleanup();
 
       // Create new level
-      this.level = new Level(this.scene, this.currentLevel);
+      const collectibleType = this.selectedSkin ? getCollectibleTypeForSkin(this.selectedSkin.id) : 'orb';
+      this.level = new Level(this.scene, this.currentLevel, collectibleType);
 
       // Reset player position
       this.player.state.position.copy(this.level.data.startPosition);

@@ -90,6 +90,9 @@
       justify-content: center;
       z-index: 2000;
       color: white;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 20px;
     }
 
     #skin-selection.hidden {
@@ -110,10 +113,11 @@
 
     .skin-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 30px;
-      max-width: 900px;
-      padding: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      width: 100%;
+      padding: 10px;
     }
 
     .skin-card {
@@ -200,25 +204,91 @@
 
     @media (max-width: 768px) {
       #skin-selection h1 {
-        font-size: 32px;
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+
+      #skin-selection p {
+        font-size: 16px;
+        margin-bottom: 20px;
       }
 
       .skin-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
+        gap: 15px;
       }
 
       .skin-card {
-        padding: 20px 15px;
+        padding: 15px 10px;
       }
 
       .skin-preview {
-        width: 80px;
-        height: 80px;
-        font-size: 40px;
+        width: 70px;
+        height: 70px;
+        font-size: 35px;
+        margin-bottom: 10px;
       }
 
       .skin-name {
+        font-size: 16px;
+      }
+
+      .skin-description {
+        font-size: 12px;
+      }
+
+      .start-button {
+        margin-top: 20px;
+        padding: 12px 40px;
+        font-size: 20px;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 600px) {
+      #skin-selection {
+        justify-content: flex-start;
+        padding: 15px;
+      }
+
+      #skin-selection h1 {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+
+      #skin-selection p {
+        font-size: 14px;
+        margin-bottom: 15px;
+      }
+
+      .skin-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        max-width: 100%;
+      }
+
+      .skin-card {
+        padding: 12px 8px;
+      }
+
+      .skin-preview {
+        width: 60px;
+        height: 60px;
+        font-size: 30px;
+        margin-bottom: 8px;
+      }
+
+      .skin-name {
+        font-size: 14px;
+        margin-bottom: 5px;
+      }
+
+      .skin-description {
+        font-size: 11px;
+      }
+
+      .start-button {
+        margin-top: 15px;
+        padding: 10px 35px;
         font-size: 18px;
       }
     }

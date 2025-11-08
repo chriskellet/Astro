@@ -44,11 +44,14 @@ export interface Controls {
   backward: boolean;
 }
 
+export type CollectibleType = 'orb' | 'coin' | 'ring';
+
 export interface Collectible {
   mesh: THREE.Mesh;
   position: THREE.Vector3;
   collected: boolean;
   value: number;
+  type: CollectibleType;
 }
 
 export interface Platform {

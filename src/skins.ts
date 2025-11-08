@@ -1,4 +1,4 @@
-import { SkinDefinition } from './types';
+import { SkinDefinition, CollectibleType } from './types';
 
 /**
  * Character skin definitions
@@ -53,6 +53,54 @@ export const AVAILABLE_SKINS: SkinDefinition[] = [
       eyeEmissive: 0x00FF00, // Green glow
     },
   },
+  {
+    id: 'steve',
+    name: 'Steve',
+    colors: {
+      base: 0x5DADE2,        // Light blue (shirt)
+      accent: 0x34495E,      // Dark gray (pants)
+      secondary: 0xD4A574,   // Tan (skin)
+      tertiary: 0x8B4513,    // Brown (hair)
+      eye: 0xFFFFFF,         // White eyes
+      eyeEmissive: 0x87CEEB, // Light blue glow
+    },
+  },
+  {
+    id: 'amy',
+    name: 'Amy',
+    colors: {
+      base: 0xFF69B4,        // Hot pink (Amy's color)
+      accent: 0xFF1493,      // Deep pink (dress)
+      secondary: 0xFFFFFF,   // White (gloves)
+      tertiary: 0xFFD700,    // Gold (accents)
+      eye: 0x00FF00,         // Green eyes
+      eyeEmissive: 0x00FF00, // Green glow
+    },
+  },
+  {
+    id: 'tails',
+    name: 'Tails',
+    colors: {
+      base: 0xFFAA00,        // Orange (Tails' color)
+      accent: 0xFF0000,      // Red (shoes)
+      secondary: 0xFFFFFF,   // White (gloves/chest)
+      tertiary: 0x0066CC,    // Blue (goggles/details)
+      eye: 0x0066FF,         // Blue eyes
+      eyeEmissive: 0x0066FF, // Blue glow
+    },
+  },
+  {
+    id: 'bowser',
+    name: 'Bowser',
+    colors: {
+      base: 0x7CFC00,        // Green (Bowser's body)
+      accent: 0xFF4500,      // Orange red (shell/spikes)
+      secondary: 0xFFD700,   // Gold (accents/spikes)
+      tertiary: 0x8B0000,    // Dark red (details)
+      eye: 0xFF0000,         // Red eyes
+      eyeEmissive: 0xFF0000, // Red glow
+    },
+  },
 ];
 
 /**
@@ -67,4 +115,20 @@ export function getSkinById(id: string): SkinDefinition {
  */
 export function getDefaultSkin(): SkinDefinition {
   return AVAILABLE_SKINS[0];
+}
+
+/**
+ * Get the collectible type for a skin
+ * Mario, Luigi, and Bowser collect coins
+ * Sonic, Amy, and Tails collect rings
+ * Others collect orbs
+ */
+export function getCollectibleTypeForSkin(skinId: string): CollectibleType {
+  if (['mario', 'luigi', 'bowser'].includes(skinId)) {
+    return 'coin';
+  } else if (['sonic', 'amy', 'tails'].includes(skinId)) {
+    return 'ring';
+  } else {
+    return 'orb';
+  }
 }

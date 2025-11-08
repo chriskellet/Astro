@@ -1,15 +1,17 @@
 import * as THREE from 'three';
-import { Platform, Collectible, LevelData, Enemy } from './types';
+import { Platform, Collectible, LevelData, Enemy, CollectibleType } from './types';
 import { EnemyFactory } from './EnemyFactory';
 
 export class Level {
   private scene: THREE.Scene;
   public data: LevelData;
   private enemyFactory: EnemyFactory;
+  private collectibleType: CollectibleType;
 
-  constructor(scene: THREE.Scene, levelNumber: number = 1) {
+  constructor(scene: THREE.Scene, levelNumber: number = 1, collectibleType: CollectibleType = 'orb') {
     this.scene = scene;
     this.enemyFactory = new EnemyFactory(scene);
+    this.collectibleType = collectibleType;
     this.data = this.createLevel(levelNumber);
   }
 
@@ -116,14 +118,40 @@ export class Level {
   }
 
   private createCollectible(x: number, y: number, z: number, value: number): Collectible {
-    const geometry = new THREE.OctahedronGeometry(0.4);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xffdd00,
-      emissive: 0xffaa00,
-      emissiveIntensity: 0.5,
-      metalness: 0.8,
-      roughness: 0.2,
-    });
+    let geometry: THREE.BufferGeometry;
+    let material: THREE.MeshStandardMaterial;
+
+    if (this.collectibleType === 'coin') {
+      // Create a coin shape (cylinder)
+      geometry = new THREE.CylinderGeometry(0.35, 0.35, 0.1, 32);
+      material = new THREE.MeshStandardMaterial({
+        color: 0xFFD700,
+        emissive: 0xFFAA00,
+        emissiveIntensity: 0.6,
+        metalness: 1.0,
+        roughness: 0.1,
+      });
+    } else if (this.collectibleType === 'ring') {
+      // Create a ring shape (torus)
+      geometry = new THREE.TorusGeometry(0.4, 0.12, 16, 32);
+      material = new THREE.MeshStandardMaterial({
+        color: 0xFFD700,
+        emissive: 0xFFCC00,
+        emissiveIntensity: 0.7,
+        metalness: 1.0,
+        roughness: 0.1,
+      });
+    } else {
+      // Default orb (octahedron)
+      geometry = new THREE.OctahedronGeometry(0.4);
+      material = new THREE.MeshStandardMaterial({
+        color: 0xffdd00,
+        emissive: 0xffaa00,
+        emissiveIntensity: 0.5,
+        metalness: 0.8,
+        roughness: 0.2,
+      });
+    }
 
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y, z);
@@ -136,15 +164,26 @@ export class Level {
       position: new THREE.Vector3(x, y, z),
       collected: false,
       value,
+      type: this.collectibleType,
     };
   }
 
   public update(deltaTime: number, playerPosition: THREE.Vector3, particles: any): void {
-    // Animate collectibles
+    // Animate collectibles with type-specific animations
     this.data.collectibles.forEach((collectible) => {
       if (!collectible.collected) {
-        collectible.mesh.rotation.y += deltaTime * 2;
-        collectible.mesh.rotation.x += deltaTime * 1;
+        // Type-specific rotation animations
+        if (collectible.type === 'coin') {
+          // Coins spin around Y axis (standing upright)
+          collectible.mesh.rotation.y += deltaTime * 3;
+        } else if (collectible.type === 'ring') {
+          // Rings spin around Z axis (like Sonic rings)
+          collectible.mesh.rotation.z += deltaTime * 4;
+        } else {
+          // Orbs rotate on multiple axes
+          collectible.mesh.rotation.y += deltaTime * 2;
+          collectible.mesh.rotation.x += deltaTime * 1;
+        }
 
         // Bob up and down
         const bobAmount = Math.sin(Date.now() * 0.003) * 0.2;
