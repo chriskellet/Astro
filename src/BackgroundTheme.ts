@@ -207,30 +207,6 @@ export class BackgroundTheme {
       console.error('Error creating sunny day ground:', error);
     }
 
-    // Add some larger distinct field patches for variety
-    for (let i = 0; i < 30; i++) {
-      const fieldSize = 30 + Math.random() * 50;
-      const fieldGeometry = new THREE.PlaneGeometry(fieldSize, fieldSize, 4, 4);
-      const fieldColor = fieldColors[Math.floor(Math.random() * fieldColors.length)];
-      const fieldMaterial = new THREE.MeshBasicMaterial({
-        color: fieldColor,
-        transparent: true,
-        opacity: 0.6,
-      });
-      const field = new THREE.Mesh(fieldGeometry, fieldMaterial);
-      field.rotation.x = -Math.PI / 2;
-      field.position.set(
-        (Math.random() - 0.5) * 900,
-        -59,
-        (Math.random() - 0.5) * 700  // Spread across the entire Z range
-      );
-
-      // Slight rotation for variety
-      field.rotation.z = Math.random() * Math.PI * 2;
-
-      this.addBackgroundObject(field);
-    }
-
     // Distant mountain ranges on the horizon
     for (let i = 0; i < 15; i++) {
       const mountain = this.createMountain();
