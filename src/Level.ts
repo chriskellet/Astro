@@ -102,7 +102,7 @@ export class Level {
     };
   }
 
-  // Level 2: Introduces seesaws and moving platforms, ~3 minutes
+  // Level 2: Introduces elevators and moving platforms, ~3 minutes
   private createLevel2(): LevelData {
     const platforms: Platform[] = [];
     const collectibles: Collectible[] = [];
@@ -111,12 +111,12 @@ export class Level {
     // Starting platform
     platforms.push(this.createPlatform(0, 0, 0, 12, 1, 12, 0x4a90e2));
 
-    // Section 1: Introduction to seesaws (0-50)
+    // Section 1: Introduction to elevators (0-50)
     platforms.push(this.createPlatform(10, 2, 0, 7, 1, 7, 0x50c878));
-    platforms.push(this.createSeesawPlatform(18, 3, -3, 10, 1, 4));
-    platforms.push(this.createPlatform(27, 4, 2, 6, 1, 6, 0x50c878));
-    platforms.push(this.createSeesawPlatform(35, 5, -2, 12, 1, 4));
-    platforms.push(this.createPlatform(45, 6, 3, 7, 1, 7, 0x50c878));
+    platforms.push(this.createElevatorPlatform(18, 3, -3, 7, 1, 7, 5, 0.8));
+    platforms.push(this.createPlatform(27, 8, 2, 6, 1, 6, 0x50c878));
+    platforms.push(this.createElevatorPlatform(35, 5, -2, 7, 1, 7, 6, 1.0));
+    platforms.push(this.createPlatform(45, 11, 3, 7, 1, 7, 0x50c878));
 
     // Section 2: Moving platforms (50-90)
     platforms.push(this.createMovingPlatform(55, 7, -3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 8));
@@ -124,16 +124,16 @@ export class Level {
     platforms.push(this.createMovingPlatform(73, 9, -4, 5, 1, 5, new THREE.Vector3(0, 0, 1), 6));
     platforms.push(this.createPlatform(82, 10, 2, 7, 1, 7, 0x50c878));
 
-    // Section 3: Combined seesaws and moving (90-130)
-    platforms.push(this.createSeesawPlatform(92, 11, -3, 10, 1, 4));
-    platforms.push(this.createMovingPlatform(102, 12, 3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 6));
-    platforms.push(this.createSeesawPlatform(111, 13, -2, 12, 1, 4));
-    platforms.push(this.createMovingPlatform(122, 14, 4, 5, 1, 5, new THREE.Vector3(0, 1, 0), 4));
+    // Section 3: Combined elevators and moving (90-130)
+    platforms.push(this.createElevatorPlatform(92, 9, -3, 7, 1, 7, 4, 0.9));
+    platforms.push(this.createMovingPlatform(102, 13, 3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 6));
+    platforms.push(this.createElevatorPlatform(111, 11, -2, 7, 1, 7, 5, 1.0));
+    platforms.push(this.createPlatform(122, 16, 4, 7, 1, 7, 0x50c878));
     platforms.push(this.createPlatform(130, 13, -3, 8, 1, 8, 0x50c878));
 
     // Section 4: Challenge section (130-160)
-    platforms.push(this.createMovingPlatform(140, 14, 2, 4, 1, 4, new THREE.Vector3(1, 0, 0), 10));
-    platforms.push(this.createSeesawPlatform(152, 15, -1, 10, 1, 4));
+    platforms.push(this.createMovingPlatform(140, 14, 2, 5, 1, 5, new THREE.Vector3(1, 0, 0), 10));
+    platforms.push(this.createElevatorPlatform(152, 12, -1, 7, 1, 7, 6, 0.8));
 
     // End platform
     platforms.push(this.createPlatform(164, 16, 2, 10, 2, 10, 0xff6b6b));
@@ -167,7 +167,7 @@ export class Level {
     };
   }
 
-  // Level 3: Introduces rotating platforms, ~3 minutes
+  // Level 3: Advanced elevators and moving platforms, ~3 minutes
   private createLevel3(): LevelData {
     const platforms: Platform[] = [];
     const collectibles: Collectible[] = [];
@@ -176,30 +176,30 @@ export class Level {
     // Starting platform
     platforms.push(this.createPlatform(0, 0, 0, 12, 1, 12, 0x4a90e2));
 
-    // Section 1: Basic platforms leading to rotating (0-40)
+    // Section 1: Basic platforms leading to elevators (0-40)
     platforms.push(this.createPlatform(10, 2, 0, 7, 1, 7, 0x50c878));
     platforms.push(this.createPlatform(18, 4, -3, 6, 1, 6, 0x50c878));
-    platforms.push(this.createRotatingPlatform(26, 6, 2, 8, 1, 4, 'y', 0.5));
-    platforms.push(this.createPlatform(35, 8, -2, 7, 1, 7, 0x50c878));
+    platforms.push(this.createElevatorPlatform(26, 4, 2, 6, 1, 6, 7, 0.9));
+    platforms.push(this.createPlatform(35, 11, -2, 7, 1, 7, 0x50c878));
 
-    // Section 2: Multiple rotating platforms (40-80)
-    platforms.push(this.createRotatingPlatform(44, 10, 3, 6, 1, 6, 'y', 0.8));
-    platforms.push(this.createMovingPlatform(53, 12, -3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 7));
-    platforms.push(this.createRotatingPlatform(62, 14, 2, 8, 1, 4, 'z', 0.6));
-    platforms.push(this.createPlatform(71, 16, -3, 7, 1, 7, 0x50c878));
-    platforms.push(this.createRotatingPlatform(80, 18, 2, 6, 1, 6, 'y', 1.0));
+    // Section 2: Multiple elevators (40-80)
+    platforms.push(this.createElevatorPlatform(44, 9, 3, 6, 1, 6, 6, 1.0));
+    platforms.push(this.createMovingPlatform(53, 15, -3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 7));
+    platforms.push(this.createElevatorPlatform(62, 12, 2, 6, 1, 6, 8, 0.8));
+    platforms.push(this.createPlatform(71, 20, -3, 7, 1, 7, 0x50c878));
+    platforms.push(this.createMovingPlatform(80, 18, 2, 6, 1, 6, new THREE.Vector3(0, 0, 1), 6));
 
-    // Section 3: Rotating with seesaws (80-120)
-    platforms.push(this.createSeesawPlatform(89, 19, -2, 10, 1, 4));
-    platforms.push(this.createRotatingPlatform(98, 20, 3, 6, 1, 6, 'y', 0.7));
-    platforms.push(this.createSeesawPlatform(107, 21, -3, 10, 1, 4));
-    platforms.push(this.createPlatform(116, 22, 2, 8, 1, 8, 0x50c878));
+    // Section 3: Elevators and moving platforms (80-120)
+    platforms.push(this.createElevatorPlatform(89, 16, -2, 7, 1, 7, 6, 1.1));
+    platforms.push(this.createMovingPlatform(98, 22, 3, 6, 1, 6, new THREE.Vector3(1, 0, 0), 5));
+    platforms.push(this.createElevatorPlatform(107, 19, -3, 7, 1, 7, 5, 0.9));
+    platforms.push(this.createPlatform(116, 24, 2, 8, 1, 8, 0x50c878));
 
-    // Section 4: Complex rotating section (120-160)
-    platforms.push(this.createRotatingPlatform(126, 24, -2, 5, 1, 5, 'y', 0.9));
-    platforms.push(this.createRotatingPlatform(134, 26, 3, 5, 1, 5, 'z', 0.5));
-    platforms.push(this.createMovingPlatform(142, 28, -2, 5, 1, 5, new THREE.Vector3(0, 1, 0), 5));
-    platforms.push(this.createRotatingPlatform(151, 28, 2, 7, 1, 7, 'y', 0.6));
+    // Section 4: Complex elevator section (120-160)
+    platforms.push(this.createElevatorPlatform(126, 22, -2, 5, 1, 5, 7, 1.0));
+    platforms.push(this.createMovingPlatform(134, 29, 3, 5, 1, 5, new THREE.Vector3(0, 0, 1), 7));
+    platforms.push(this.createElevatorPlatform(142, 25, -2, 5, 1, 5, 6, 1.1));
+    platforms.push(this.createPlatform(151, 31, 2, 7, 1, 7, 0x50c878));
 
     // End platform
     platforms.push(this.createPlatform(162, 30, 0, 10, 2, 10, 0xff6b6b));
@@ -315,37 +315,37 @@ export class Level {
 
     // Section 1: Warm-up with all elements (0-40)
     platforms.push(this.createPlatform(10, 2, 0, 7, 1, 7, 0x50c878));
-    platforms.push(this.createSeesawPlatform(18, 4, -3, 10, 1, 4));
-    platforms.push(this.createRotatingPlatform(28, 6, 2, 6, 1, 6, 'y', 0.7));
-    platforms.push(this.createMovingPlatform(37, 8, -3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 6));
+    platforms.push(this.createElevatorPlatform(18, 3, -3, 7, 1, 7, 5, 1.0));
+    platforms.push(this.createMovingPlatform(28, 8, 2, 6, 1, 6, new THREE.Vector3(1, 0, 0), 6));
+    platforms.push(this.createElevatorPlatform(37, 7, -3, 5, 1, 5, 6, 1.1));
 
     // Section 2: Springs and movement (40-70)
-    platforms.push(this.createSpringPlatform(46, 9, 2, 4, 1, 4, 18));
-    platforms.push(this.createRotatingPlatform(46, 18, 2, 6, 1, 6, 'z', 0.6));
-    platforms.push(this.createMovingPlatform(55, 20, -3, 5, 1, 5, new THREE.Vector3(0, 1, 0), 5));
-    platforms.push(this.createSeesawPlatform(64, 22, 2, 10, 1, 4));
+    platforms.push(this.createSpringPlatform(46, 13, 2, 4, 1, 4, 18));
+    platforms.push(this.createPlatform(46, 23, 2, 7, 1, 7, 0x50c878));
+    platforms.push(this.createElevatorPlatform(55, 19, -3, 5, 1, 5, 7, 0.9));
+    platforms.push(this.createPlatform(64, 26, 2, 7, 1, 7, 0x50c878));
 
     // Section 3: Falling platforms gauntlet (70-100)
     platforms.push(this.createPlatform(74, 24, -2, 7, 1, 7, 0x50c878));
     platforms.push(this.createFallingPlatform(82, 25, 3, 4, 1, 4, 0.6));
     platforms.push(this.createFallingPlatform(88, 26, -2, 4, 1, 4, 0.6));
     platforms.push(this.createFallingPlatform(94, 27, 3, 4, 1, 4, 0.6));
-    platforms.push(this.createRotatingPlatform(100, 28, -2, 6, 1, 6, 'y', 0.8));
+    platforms.push(this.createElevatorPlatform(100, 24, -2, 6, 1, 6, 6, 1.0));
 
     // Section 4: Complex combinations (100-140)
     platforms.push(this.createMovingPlatform(109, 30, 3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 8));
-    platforms.push(this.createSeesawPlatform(119, 32, -2, 10, 1, 4));
-    platforms.push(this.createSpringPlatform(129, 33, 2, 4, 1, 4, 20));
-    platforms.push(this.createFallingPlatform(129, 43, 2, 6, 1, 6, 0.7));
-    platforms.push(this.createRotatingPlatform(137, 45, -2, 7, 1, 7, 'y', 0.9));
+    platforms.push(this.createElevatorPlatform(119, 28, -2, 7, 1, 7, 8, 1.0));
+    platforms.push(this.createSpringPlatform(129, 36, 2, 4, 1, 4, 20));
+    platforms.push(this.createFallingPlatform(129, 48, 2, 6, 1, 6, 0.7));
+    platforms.push(this.createMovingPlatform(137, 47, -2, 7, 1, 7, new THREE.Vector3(0, 0, 1), 6));
 
     // Section 5: Final gauntlet (140-180)
-    platforms.push(this.createMovingPlatform(146, 47, 3, 5, 1, 5, new THREE.Vector3(0, 0, 1), 7));
-    platforms.push(this.createFallingPlatform(154, 49, -2, 4, 1, 4, 0.5));
-    platforms.push(this.createRotatingPlatform(160, 51, 2, 6, 1, 6, 'z', 0.7));
-    platforms.push(this.createSpringPlatform(168, 52, -2, 4, 1, 4, 22));
-    platforms.push(this.createRotatingPlatform(168, 62, -2, 8, 1, 8, 'y', 0.6));
-    platforms.push(this.createSeesawPlatform(177, 64, 2, 12, 1, 4));
+    platforms.push(this.createElevatorPlatform(146, 44, 3, 5, 1, 5, 7, 1.1));
+    platforms.push(this.createFallingPlatform(154, 51, -2, 4, 1, 4, 0.5));
+    platforms.push(this.createMovingPlatform(160, 53, 2, 6, 1, 6, new THREE.Vector3(1, 0, 0), 7));
+    platforms.push(this.createSpringPlatform(168, 54, -2, 4, 1, 4, 22));
+    platforms.push(this.createPlatform(168, 68, -2, 8, 1, 8, 0x50c878));
+    platforms.push(this.createElevatorPlatform(177, 62, 2, 8, 1, 8, 8, 0.9));
 
     // End platform
     platforms.push(this.createPlatform(189, 66, 0, 12, 2, 12, 0xff6b6b));
@@ -428,25 +428,13 @@ export class Level {
 
   private initializePlatformProperties(platform: Platform): void {
     switch (platform.type) {
-      case 'seesaw':
-        platform.tiltAngle = 0;
-        platform.maxTiltAngle = Math.PI / 6; // 30 degrees
-        platform.tiltSpeed = 2;
-        platform.pivotPoint = platform.position.clone();
-        break;
-
-      case 'rotating':
-        platform.rotationSpeed = 1;
-        platform.rotationAxis = 'y';
-        platform.currentRotation = 0;
-        break;
-
+      case 'elevator':
       case 'moving':
-        platform.moveSpeed = 2;
-        platform.moveRange = 10;
+        platform.moveSpeed = platform.moveSpeed || 2;
+        platform.moveRange = platform.moveRange || 10;
         platform.moveStartPos = platform.position.clone();
         platform.moveProgress = 0;
-        platform.moveDirection = new THREE.Vector3(1, 0, 0); // Default: move along X axis
+        platform.moveDirection = platform.moveDirection || new THREE.Vector3(1, 0, 0);
         break;
 
       case 'spring':
@@ -472,24 +460,17 @@ export class Level {
 
   // Helper methods for creating specific platform types
 
-  private createSeesawPlatform(
+  private createElevatorPlatform(
     x: number, y: number, z: number,
     width: number, height: number, depth: number,
+    range: number,
+    speed: number = 1,
     color: number = 0x9370db
   ): Platform {
-    return this.createPlatform(x, y, z, width, height, depth, color, 'seesaw');
-  }
-
-  private createRotatingPlatform(
-    x: number, y: number, z: number,
-    width: number, height: number, depth: number,
-    axis: 'x' | 'y' | 'z' = 'y',
-    speed: number = 1,
-    color: number = 0x4169e1
-  ): Platform {
-    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'rotating');
-    platform.rotationAxis = axis;
-    platform.rotationSpeed = speed;
+    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'elevator');
+    platform.moveDirection = new THREE.Vector3(0, 1, 0); // Move vertically
+    platform.moveRange = range;
+    platform.moveSpeed = speed;
     return platform;
   }
 
@@ -632,7 +613,7 @@ export class Level {
 
   public update(deltaTime: number, playerPosition: THREE.Vector3, particles: any): void {
     // Update interactive platforms
-    this.updatePlatforms(deltaTime, playerPosition);
+    this.updatePlatforms(deltaTime);
 
     // Animate collectibles with type-specific animations
     this.data.collectibles.forEach((collectible) => {
@@ -675,15 +656,10 @@ export class Level {
     }
   }
 
-  private updatePlatforms(deltaTime: number, playerPosition: THREE.Vector3): void {
+  private updatePlatforms(deltaTime: number): void {
     this.data.platforms.forEach((platform) => {
       switch (platform.type) {
-        case 'seesaw':
-          this.updateSeesawPlatform(platform, playerPosition, deltaTime);
-          break;
-        case 'rotating':
-          this.updateRotatingPlatform(platform, deltaTime);
-          break;
+        case 'elevator':
         case 'moving':
           this.updateMovingPlatform(platform, deltaTime);
           break;
@@ -695,50 +671,6 @@ export class Level {
           break;
       }
     });
-  }
-
-  private updateSeesawPlatform(platform: Platform, playerPosition: THREE.Vector3, deltaTime: number): void {
-    if (!platform.pivotPoint || platform.maxTiltAngle === undefined || platform.tiltSpeed === undefined) return;
-
-    // Calculate distance from player to pivot point (only X axis matters for seesaw)
-    const playerOnPlatform = this.isPlayerOnPlatform(playerPosition, platform);
-
-    if (playerOnPlatform) {
-      const offsetX = playerPosition.x - platform.pivotPoint.x;
-      const targetTilt = Math.max(-platform.maxTiltAngle, Math.min(platform.maxTiltAngle, offsetX * 0.1));
-
-      // Smoothly transition to target tilt
-      platform.tiltAngle = platform.tiltAngle || 0;
-      platform.tiltAngle += (targetTilt - platform.tiltAngle) * platform.tiltSpeed * deltaTime;
-    } else {
-      // Return to neutral position
-      platform.tiltAngle = platform.tiltAngle || 0;
-      platform.tiltAngle *= (1 - platform.tiltSpeed * deltaTime);
-    }
-
-    // Apply rotation to mesh
-    platform.mesh.rotation.z = platform.tiltAngle || 0;
-    platform.mesh.updateMatrixWorld(true); // Update world matrix for collision detection
-  }
-
-  private updateRotatingPlatform(platform: Platform, deltaTime: number): void {
-    if (!platform.rotationSpeed || !platform.rotationAxis) return;
-
-    platform.currentRotation = (platform.currentRotation || 0) + platform.rotationSpeed * deltaTime;
-
-    switch (platform.rotationAxis) {
-      case 'x':
-        platform.mesh.rotation.x = platform.currentRotation;
-        break;
-      case 'y':
-        platform.mesh.rotation.y = platform.currentRotation;
-        break;
-      case 'z':
-        platform.mesh.rotation.z = platform.currentRotation;
-        break;
-    }
-
-    platform.mesh.updateMatrixWorld(true); // Update world matrix for collision detection
   }
 
   private updateMovingPlatform(platform: Platform, deltaTime: number): void {
@@ -795,20 +727,6 @@ export class Level {
         platform.mesh.visible = false;
       }
     }
-  }
-
-  private isPlayerOnPlatform(playerPosition: THREE.Vector3, platform: Platform): boolean {
-    const playerRadius = 0.5;
-    const playerHeight = 1.5;
-
-    const platformTop = platform.position.y + platform.size.y / 2;
-    const playerBottom = playerPosition.y - playerHeight / 2;
-
-    return (
-      Math.abs(playerPosition.x - platform.position.x) < platform.size.x / 2 + playerRadius &&
-      Math.abs(playerPosition.z - platform.position.z) < platform.size.z / 2 + playerRadius &&
-      Math.abs(playerBottom - platformTop) < 0.5
-    );
   }
 
   public checkCollectibles(playerPosition: THREE.Vector3, playerRadius: number): number {
