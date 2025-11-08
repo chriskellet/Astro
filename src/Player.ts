@@ -29,8 +29,8 @@ export class Player {
 
   // Velocity-based thrust parameters
   private maxUpwardVelocity: number = 8; // Maximum upward speed (m/s)
-  private fallRecoveryTime: number = 1.0; // Time to recover from fall to zero velocity (seconds)
-  private riseTime: number = 0.5; // Time to accelerate to max velocity (seconds)
+  private fallRecoveryTime: number = 0.6; // Time to recover from fall to zero velocity (seconds)
+  private riseTime: number = 0.3; // Time to accelerate to max velocity (seconds)
 
   // Animation components for professional character model
   private bodyParts: {
@@ -554,14 +554,10 @@ export class Player {
         // Falling - target is to stop falling (reach 0 m/s)
         targetVelocity = 0;
         timeToTarget = this.fallRecoveryTime;
-      } else if (this.state.velocity.y < this.maxUpwardVelocity) {
-        // Rising but below max - target is max upward velocity
+      } else {
+        // Rising - target is max upward velocity (will accelerate if below, decelerate if above)
         targetVelocity = this.maxUpwardVelocity;
         timeToTarget = this.riseTime;
-      } else {
-        // At or above max velocity - maintain current velocity
-        targetVelocity = this.state.velocity.y;
-        timeToTarget = 1.0; // Doesn't matter, error will be 0
       }
 
       // Calculate acceleration needed to reach target velocity
