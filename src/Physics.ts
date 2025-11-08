@@ -21,6 +21,11 @@ export class Physics {
     let groundPlatform: Platform | null = null;
 
     for (const platform of platforms) {
+      // Skip platforms that are falling and invisible
+      if (platform.type === 'falling' && platform.isFalling && platform.mesh.visible === false) {
+        continue;
+      }
+
       const collision = this.checkBoxCollision(
         position,
         new THREE.Vector3(playerRadius * 2, playerHeight, playerRadius * 2),
@@ -41,6 +46,9 @@ export class Physics {
           velocity.y = 0;
           grounded = true;
           groundPlatform = platform;
+
+          // Handle special platform types
+          this.handlePlatformSpecialBehavior(platform, velocity);
         }
         // Hit platform from below
         else if (velocity.y > 0 && playerTop >= platformBottom && playerTop <= platformBottom + 0.5) {
@@ -74,6 +82,28 @@ export class Physics {
     }
 
     return { grounded, platform: groundPlatform };
+  }
+
+  private handlePlatformSpecialBehavior(platform: Platform, velocity: THREE.Vector3): void {
+    switch (platform.type) {
+      case 'spring':
+        // Launch player upward
+        if (!platform.compressed && platform.springForce) {
+          velocity.y = platform.springForce;
+          platform.compressed = true;
+        }
+        break;
+
+      case 'falling':
+        // Trigger falling after delay
+        if (!platform.isFalling && platform.fallTimer !== undefined) {
+          platform.fallTimer += 0.016; // Approximate deltaTime
+          if (platform.fallTimer > (platform.fallDelay || 0.5)) {
+            platform.isFalling = true;
+          }
+        }
+        break;
+    }
   }
 
   private checkBoxCollision(

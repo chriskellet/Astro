@@ -580,7 +580,7 @@ export class Player {
 
     // Update mesh position with vertical offset so feet sit on ground
     this.mesh.position.copy(this.state.position);
-    this.mesh.position.y += 0.35; // Offset to prevent feet sinking into ground
+    this.mesh.position.y += 0.75; // Offset to prevent feet sinking into ground
 
     // Professional animation system
     this.updateAnimations(deltaTime, moveVector);

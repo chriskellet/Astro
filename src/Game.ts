@@ -25,7 +25,7 @@ export class Game {
   private scoreElement: HTMLElement | null;
   private levelElement: HTMLElement | null;
   private currentLevel: number;
-  private maxLevels: number = 3;
+  private maxLevels: number = 5;
   private damageCooldown: number = 0;
   private chickenBotCooldown: number = 0;
   private selectedSkin?: SkinDefinition;

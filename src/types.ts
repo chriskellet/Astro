@@ -54,10 +54,39 @@ export interface Collectible {
   type: CollectibleType;
 }
 
+export type PlatformType = 'static' | 'seesaw' | 'rotating' | 'moving' | 'spring' | 'falling';
+
 export interface Platform {
   mesh: THREE.Mesh;
   position: THREE.Vector3;
   size: THREE.Vector3;
+  type?: PlatformType;
+  // Seesaw properties
+  tiltAngle?: number;
+  maxTiltAngle?: number;
+  tiltSpeed?: number;
+  pivotPoint?: THREE.Vector3;
+  // Rotating platform properties
+  rotationSpeed?: number;
+  rotationAxis?: 'x' | 'y' | 'z';
+  currentRotation?: number;
+  // Moving platform properties
+  moveDirection?: THREE.Vector3;
+  moveSpeed?: number;
+  moveRange?: number;
+  moveStartPos?: THREE.Vector3;
+  moveProgress?: number;
+  // Spring platform properties
+  springForce?: number;
+  compressed?: boolean;
+  compressionAmount?: number;
+  // Falling platform properties
+  isFalling?: boolean;
+  fallTimer?: number;
+  fallDelay?: number;
+  originalPosition?: THREE.Vector3;
+  respawnTimer?: number;
+  respawnDelay?: number;
 }
 
 export type EnemyType = 'pusher' | 'spiky' | 'firebreather';
