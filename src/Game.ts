@@ -383,8 +383,28 @@ export class Game {
     this.level.data.enemies.forEach((enemy) => {
       if (!enemy.isActive) return;
 
+      // Check if flame particles hit enemy
+      const enemyRadius = 0.6;
+      if (this.particles.checkFlameCollisions(enemy.position, enemyRadius)) {
+        // Enemy hit by rocket flames - defeat it (even if spiky with spikes out!)
+        enemy.isActive = false;
+        enemy.health = 0;
+
+        // Emit defeat particles with enemy color
+        const enemyColor = this.getEnemyColor(enemy.type);
+        this.particles.emitEnemyDefeatedEffect(enemy.position, enemyColor);
+
+        // Award score
+        this.player.addScore(50);
+        this.updateUI();
+
+        // Hide enemy mesh
+        enemy.mesh.visible = false;
+        return; // Skip other collision checks for this enemy
+      }
+
       const distance = playerPos.distanceTo(enemy.position);
-      const collisionDistance = playerRadius + 0.6; // enemy radius ~0.6
+      const collisionDistance = playerRadius + enemyRadius;
 
       if (distance < collisionDistance) {
         // Check if player is jumping on top of enemy
