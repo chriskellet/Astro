@@ -1,13 +1,15 @@
 import * as THREE from 'three';
-import { PlayerState, Controls } from './types';
+import { PlayerState, Controls, SkinDefinition } from './types';
 import { Physics } from './Physics';
 import { ParticleSystem } from './ParticleSystem';
+import { getDefaultSkin } from './skins';
 
 export class Player {
   public mesh: THREE.Group;
   public state: PlayerState;
   private physics: Physics;
   private particles: ParticleSystem;
+  private skin: SkinDefinition;
   private moveSpeed: number = 8;
   private jumpForce: number = 12;
   private boosterThrust: number = 25;
@@ -49,10 +51,11 @@ export class Player {
   private targetRotationY: number = 0;
   private rotationSpeed: number = 8; // radians per second
 
-  constructor(physics: Physics, camera: THREE.Camera, particles: ParticleSystem) {
+  constructor(physics: Physics, camera: THREE.Camera, particles: ParticleSystem, skin?: SkinDefinition) {
     this.physics = physics;
     this.camera = camera;
     this.particles = particles;
+    this.skin = skin || getDefaultSkin();
     this.cameraOffset = new THREE.Vector3(0, 8, 12);
 
     this.state = {
@@ -75,39 +78,40 @@ export class Player {
 
     // ===== MATERIALS SETUP =====
     // Create professional PBR materials with varied metalness and roughness
-    const whitePlasticMaterial = new THREE.MeshStandardMaterial({
-      color: 0xf8f8f8,
-      metalness: 0.1,
-      roughness: 0.3,
+    // Now using skin color configuration
+    const baseMaterial = new THREE.MeshStandardMaterial({
+      color: this.skin.colors.base,
+      metalness: this.skin.properties?.metalness ?? 0.1,
+      roughness: this.skin.properties?.roughness ?? 0.3,
       envMapIntensity: 1.0,
     });
 
-    const blueMetalMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0066ff,
+    const accentMaterial = new THREE.MeshStandardMaterial({
+      color: this.skin.colors.accent,
       metalness: 0.8,
       roughness: 0.2,
-      emissive: 0x003388,
-      emissiveIntensity: 0.2,
+      emissive: this.skin.colors.accent,
+      emissiveIntensity: this.skin.properties?.emissiveIntensity ?? 0.2,
       envMapIntensity: 1.5,
     });
 
-    const darkMetalMaterial = new THREE.MeshStandardMaterial({
-      color: 0x333333,
+    const secondaryMaterial = new THREE.MeshStandardMaterial({
+      color: this.skin.colors.secondary,
       metalness: 0.9,
       roughness: 0.15,
       envMapIntensity: 1.2,
     });
 
-    const lightMetalMaterial = new THREE.MeshStandardMaterial({
-      color: 0xdddddd,
+    const tertiaryMaterial = new THREE.MeshStandardMaterial({
+      color: this.skin.colors.tertiary,
       metalness: 0.7,
       roughness: 0.25,
       envMapIntensity: 1.0,
     });
 
     const glowingEyeMaterial = new THREE.MeshStandardMaterial({
-      color: 0x00ffff,
-      emissive: 0x00ffff,
+      color: this.skin.colors.eye,
+      emissive: this.skin.colors.eyeEmissive,
       emissiveIntensity: 1.0,
       metalness: 0.0,
       roughness: 0.1,
@@ -134,33 +138,33 @@ export class Player {
     }
     chestGeometry.computeVertexNormals();
 
-    const chest = new THREE.Mesh(chestGeometry, whitePlasticMaterial);
+    const chest = new THREE.Mesh(chestGeometry, baseMaterial);
     chest.castShadow = true;
     chest.receiveShadow = true;
     this.bodyParts.torso.add(chest);
 
-    // Blue accent stripes
+    // Accent stripes
     const accentGeometry1 = new THREE.BoxGeometry(0.65, 0.08, 0.52);
-    const accent1 = new THREE.Mesh(accentGeometry1, blueMetalMaterial);
+    const accent1 = new THREE.Mesh(accentGeometry1, accentMaterial);
     accent1.position.y = 0.15;
     accent1.castShadow = true;
     this.bodyParts.torso.add(accent1);
 
-    const accent2 = new THREE.Mesh(accentGeometry1.clone(), blueMetalMaterial);
+    const accent2 = new THREE.Mesh(accentGeometry1.clone(), accentMaterial);
     accent2.position.y = -0.15;
     accent2.castShadow = true;
     this.bodyParts.torso.add(accent2);
 
     // Chest panel detail
     const panelGeometry = new THREE.BoxGeometry(0.3, 0.3, 0.52);
-    const panel = new THREE.Mesh(panelGeometry, darkMetalMaterial);
+    const panel = new THREE.Mesh(panelGeometry, secondaryMaterial);
     panel.position.set(0, 0, 0.01);
     panel.castShadow = true;
     this.bodyParts.torso.add(panel);
 
     // Small circular core detail
     const coreGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.05, 16);
-    const core = new THREE.Mesh(coreGeometry, blueMetalMaterial);
+    const core = new THREE.Mesh(coreGeometry, accentMaterial);
     core.rotation.x = Math.PI / 2;
     core.position.set(0, 0, 0.28);
     core.castShadow = true;
@@ -175,14 +179,14 @@ export class Player {
     // Main head - slightly elongated sphere
     const headGeometry = new THREE.SphereGeometry(0.28, 32, 32);
     headGeometry.scale(1, 1.1, 1);
-    const head = new THREE.Mesh(headGeometry, whitePlasticMaterial);
+    const head = new THREE.Mesh(headGeometry, baseMaterial);
     head.castShadow = true;
     head.receiveShadow = true;
     this.bodyParts.head.add(head);
 
     // Visor/face plate
     const visorGeometry = new THREE.SphereGeometry(0.29, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    const visor = new THREE.Mesh(visorGeometry, darkMetalMaterial);
+    const visor = new THREE.Mesh(visorGeometry, secondaryMaterial);
     visor.position.z = 0.05;
     visor.castShadow = true;
     this.bodyParts.head.add(visor);
@@ -214,13 +218,13 @@ export class Player {
 
     // Antenna details
     const antennaGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.15, 8);
-    const antenna = new THREE.Mesh(antennaGeometry, darkMetalMaterial);
+    const antenna = new THREE.Mesh(antennaGeometry, secondaryMaterial);
     antenna.position.set(0, 0.35, 0);
     antenna.castShadow = true;
     this.bodyParts.head.add(antenna);
 
     const antennaTipGeometry = new THREE.SphereGeometry(0.04, 16, 16);
-    const antennaTip = new THREE.Mesh(antennaTipGeometry, blueMetalMaterial);
+    const antennaTip = new THREE.Mesh(antennaTipGeometry, accentMaterial);
     antennaTip.position.set(0, 0.42, 0);
     antennaTip.castShadow = true;
     this.bodyParts.head.add(antennaTip);
@@ -232,12 +236,12 @@ export class Player {
     // Left Arm
     this.bodyParts.leftUpperArm = new THREE.Group();
     const leftShoulderGeometry = new THREE.SphereGeometry(0.12, 16, 16);
-    const leftShoulder = new THREE.Mesh(leftShoulderGeometry, darkMetalMaterial);
+    const leftShoulder = new THREE.Mesh(leftShoulderGeometry, secondaryMaterial);
     leftShoulder.castShadow = true;
     this.bodyParts.leftUpperArm.add(leftShoulder);
 
     const upperArmGeometry = new THREE.CapsuleGeometry(0.08, 0.35, 8, 16);
-    const leftUpperArmMesh = new THREE.Mesh(upperArmGeometry, lightMetalMaterial);
+    const leftUpperArmMesh = new THREE.Mesh(upperArmGeometry, tertiaryMaterial);
     leftUpperArmMesh.position.y = -0.2;
     leftUpperArmMesh.castShadow = true;
     this.bodyParts.leftUpperArm.add(leftUpperArmMesh);
@@ -247,12 +251,12 @@ export class Player {
 
     this.bodyParts.leftLowerArm = new THREE.Group();
     const leftElbowGeometry = new THREE.SphereGeometry(0.09, 16, 16);
-    const leftElbow = new THREE.Mesh(leftElbowGeometry, darkMetalMaterial);
+    const leftElbow = new THREE.Mesh(leftElbowGeometry, secondaryMaterial);
     leftElbow.castShadow = true;
     this.bodyParts.leftLowerArm.add(leftElbow);
 
     const lowerArmGeometry = new THREE.CapsuleGeometry(0.07, 0.3, 8, 16);
-    const leftLowerArmMesh = new THREE.Mesh(lowerArmGeometry, whitePlasticMaterial);
+    const leftLowerArmMesh = new THREE.Mesh(lowerArmGeometry, baseMaterial);
     leftLowerArmMesh.position.y = -0.18;
     leftLowerArmMesh.castShadow = true;
     this.bodyParts.leftLowerArm.add(leftLowerArmMesh);
@@ -262,18 +266,18 @@ export class Player {
 
     const handGeometry = new THREE.SphereGeometry(0.09, 16, 16);
     handGeometry.scale(1, 1.2, 0.8);
-    this.bodyParts.leftHand = new THREE.Mesh(handGeometry, blueMetalMaterial);
+    this.bodyParts.leftHand = new THREE.Mesh(handGeometry, accentMaterial);
     this.bodyParts.leftHand.position.y = -0.36;
     this.bodyParts.leftHand.castShadow = true;
     this.bodyParts.leftLowerArm.add(this.bodyParts.leftHand);
 
     // Right Arm (mirror of left)
     this.bodyParts.rightUpperArm = new THREE.Group();
-    const rightShoulder = new THREE.Mesh(leftShoulderGeometry, darkMetalMaterial);
+    const rightShoulder = new THREE.Mesh(leftShoulderGeometry, secondaryMaterial);
     rightShoulder.castShadow = true;
     this.bodyParts.rightUpperArm.add(rightShoulder);
 
-    const rightUpperArmMesh = new THREE.Mesh(upperArmGeometry, lightMetalMaterial);
+    const rightUpperArmMesh = new THREE.Mesh(upperArmGeometry, tertiaryMaterial);
     rightUpperArmMesh.position.y = -0.2;
     rightUpperArmMesh.castShadow = true;
     this.bodyParts.rightUpperArm.add(rightUpperArmMesh);
@@ -282,11 +286,11 @@ export class Player {
     this.bodyParts.torso.add(this.bodyParts.rightUpperArm);
 
     this.bodyParts.rightLowerArm = new THREE.Group();
-    const rightElbow = new THREE.Mesh(leftElbowGeometry, darkMetalMaterial);
+    const rightElbow = new THREE.Mesh(leftElbowGeometry, secondaryMaterial);
     rightElbow.castShadow = true;
     this.bodyParts.rightLowerArm.add(rightElbow);
 
-    const rightLowerArmMesh = new THREE.Mesh(lowerArmGeometry, whitePlasticMaterial);
+    const rightLowerArmMesh = new THREE.Mesh(lowerArmGeometry, baseMaterial);
     rightLowerArmMesh.position.y = -0.18;
     rightLowerArmMesh.castShadow = true;
     this.bodyParts.rightLowerArm.add(rightLowerArmMesh);
@@ -294,7 +298,7 @@ export class Player {
     this.bodyParts.rightLowerArm.position.y = -0.4;
     this.bodyParts.rightUpperArm.add(this.bodyParts.rightLowerArm);
 
-    this.bodyParts.rightHand = new THREE.Mesh(handGeometry.clone(), blueMetalMaterial);
+    this.bodyParts.rightHand = new THREE.Mesh(handGeometry.clone(), accentMaterial);
     this.bodyParts.rightHand.position.y = -0.36;
     this.bodyParts.rightHand.castShadow = true;
     this.bodyParts.rightLowerArm.add(this.bodyParts.rightHand);
@@ -303,12 +307,12 @@ export class Player {
     // Left Leg
     this.bodyParts.leftUpperLeg = new THREE.Group();
     const leftHipGeometry = new THREE.SphereGeometry(0.13, 16, 16);
-    const leftHip = new THREE.Mesh(leftHipGeometry, darkMetalMaterial);
+    const leftHip = new THREE.Mesh(leftHipGeometry, secondaryMaterial);
     leftHip.castShadow = true;
     this.bodyParts.leftUpperLeg.add(leftHip);
 
     const upperLegGeometry = new THREE.CapsuleGeometry(0.1, 0.4, 8, 16);
-    const leftUpperLegMesh = new THREE.Mesh(upperLegGeometry, lightMetalMaterial);
+    const leftUpperLegMesh = new THREE.Mesh(upperLegGeometry, tertiaryMaterial);
     leftUpperLegMesh.position.y = -0.25;
     leftUpperLegMesh.castShadow = true;
     this.bodyParts.leftUpperLeg.add(leftUpperLegMesh);
@@ -318,12 +322,12 @@ export class Player {
 
     this.bodyParts.leftLowerLeg = new THREE.Group();
     const leftKneeGeometry = new THREE.SphereGeometry(0.11, 16, 16);
-    const leftKnee = new THREE.Mesh(leftKneeGeometry, darkMetalMaterial);
+    const leftKnee = new THREE.Mesh(leftKneeGeometry, secondaryMaterial);
     leftKnee.castShadow = true;
     this.bodyParts.leftLowerLeg.add(leftKnee);
 
     const lowerLegGeometry = new THREE.CapsuleGeometry(0.09, 0.35, 8, 16);
-    const leftLowerLegMesh = new THREE.Mesh(lowerLegGeometry, whitePlasticMaterial);
+    const leftLowerLegMesh = new THREE.Mesh(lowerLegGeometry, baseMaterial);
     leftLowerLegMesh.position.y = -0.22;
     leftLowerLegMesh.castShadow = true;
     this.bodyParts.leftLowerLeg.add(leftLowerLegMesh);
@@ -332,18 +336,18 @@ export class Player {
     this.bodyParts.leftUpperLeg.add(this.bodyParts.leftLowerLeg);
 
     const footGeometry = new THREE.BoxGeometry(0.15, 0.1, 0.25, 4, 4, 4);
-    this.bodyParts.leftFoot = new THREE.Mesh(footGeometry, blueMetalMaterial);
+    this.bodyParts.leftFoot = new THREE.Mesh(footGeometry, accentMaterial);
     this.bodyParts.leftFoot.position.set(0, -0.47, 0.05);
     this.bodyParts.leftFoot.castShadow = true;
     this.bodyParts.leftLowerLeg.add(this.bodyParts.leftFoot);
 
     // Right Leg (mirror of left)
     this.bodyParts.rightUpperLeg = new THREE.Group();
-    const rightHip = new THREE.Mesh(leftHipGeometry, darkMetalMaterial);
+    const rightHip = new THREE.Mesh(leftHipGeometry, secondaryMaterial);
     rightHip.castShadow = true;
     this.bodyParts.rightUpperLeg.add(rightHip);
 
-    const rightUpperLegMesh = new THREE.Mesh(upperLegGeometry, lightMetalMaterial);
+    const rightUpperLegMesh = new THREE.Mesh(upperLegGeometry, tertiaryMaterial);
     rightUpperLegMesh.position.y = -0.25;
     rightUpperLegMesh.castShadow = true;
     this.bodyParts.rightUpperLeg.add(rightUpperLegMesh);
@@ -352,11 +356,11 @@ export class Player {
     this.bodyParts.torso.add(this.bodyParts.rightUpperLeg);
 
     this.bodyParts.rightLowerLeg = new THREE.Group();
-    const rightKnee = new THREE.Mesh(leftKneeGeometry, darkMetalMaterial);
+    const rightKnee = new THREE.Mesh(leftKneeGeometry, secondaryMaterial);
     rightKnee.castShadow = true;
     this.bodyParts.rightLowerLeg.add(rightKnee);
 
-    const rightLowerLegMesh = new THREE.Mesh(lowerLegGeometry, whitePlasticMaterial);
+    const rightLowerLegMesh = new THREE.Mesh(lowerLegGeometry, baseMaterial);
     rightLowerLegMesh.position.y = -0.22;
     rightLowerLegMesh.castShadow = true;
     this.bodyParts.rightLowerLeg.add(rightLowerLegMesh);
@@ -364,7 +368,7 @@ export class Player {
     this.bodyParts.rightLowerLeg.position.y = -0.5;
     this.bodyParts.rightUpperLeg.add(this.bodyParts.rightLowerLeg);
 
-    this.bodyParts.rightFoot = new THREE.Mesh(footGeometry.clone(), blueMetalMaterial);
+    this.bodyParts.rightFoot = new THREE.Mesh(footGeometry.clone(), accentMaterial);
     this.bodyParts.rightFoot.position.set(0, -0.47, 0.05);
     this.bodyParts.rightFoot.castShadow = true;
     this.bodyParts.rightLowerLeg.add(this.bodyParts.rightFoot);

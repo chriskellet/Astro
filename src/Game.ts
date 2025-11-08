@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GameConfig } from './types';
+import { GameConfig, SkinDefinition } from './types';
 import { Player } from './Player';
 import { Level } from './Level';
 import { Physics } from './Physics';
@@ -28,7 +28,7 @@ export class Game {
   private damageCooldown: number = 0;
   private chickenBotCooldown: number = 0;
 
-  constructor(config: GameConfig) {
+  constructor(config: GameConfig, skin?: SkinDefinition) {
     this.canvas = config.canvas;
     this.lastTime = performance.now();
     this.running = false;
@@ -78,8 +78,8 @@ export class Game {
     // Level
     this.level = new Level(this.scene, this.currentLevel);
 
-    // Player
-    this.player = new Player(this.physics, this.camera, this.particles);
+    // Player - pass selected skin
+    this.player = new Player(this.physics, this.camera, this.particles, skin);
     this.scene.add(this.player.mesh);
 
     // Create control canvas overlay
