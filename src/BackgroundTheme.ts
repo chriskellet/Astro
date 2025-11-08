@@ -170,7 +170,7 @@ export class BackgroundTheme {
       });
       const ground = new THREE.Mesh(groundGeometry, groundMaterial);
       ground.rotation.x = -Math.PI / 2;
-      ground.position.set(0, -60, 100); // Position it further forward
+      ground.position.set(0, -60, -200); // Center it far in front of camera start position
 
       // Add procedural color variation to create field patterns
       const colors: number[] = [];
