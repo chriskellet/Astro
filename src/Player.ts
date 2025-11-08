@@ -11,8 +11,8 @@ export class Player {
   private particles: ParticleSystem;
   private skin: SkinDefinition;
   private moveSpeed: number = 8;
-  private acceleration: number = 40; // Acceleration rate for smooth movement
-  private friction: number = 20; // Deceleration when no input
+  private acceleration: number = 25; // Acceleration rate for smooth movement
+  private friction: number = 15; // Deceleration when no input
   private jumpForce: number = 12;
   private boosterThrust: number = 25;
   private radius: number = 0.5;
