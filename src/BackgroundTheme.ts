@@ -44,8 +44,8 @@ export class BackgroundTheme {
         return {
           backgroundColor: 0x87ceeb,
           fogColor: 0x87ceeb,
-          fogNear: 40,
-          fogFar: 120,
+          fogNear: 100,
+          fogFar: 800,
           ambientLightColor: 0xffffff,
           ambientLightIntensity: 0.7,
           sunColor: 0xfffacd,
