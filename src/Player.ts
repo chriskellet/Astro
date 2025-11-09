@@ -481,34 +481,33 @@ export class Player {
       if (controls.forward) moveVector.z -= 1;
       if (controls.backward) moveVector.z += 1;
     } else {
-      // Over-the-shoulder mode: camera-relative controls
-      // Get camera's forward direction (projected onto XZ plane)
-      const cameraForward = new THREE.Vector3();
-      this.camera.getWorldDirection(cameraForward);
-      cameraForward.y = 0; // Project onto horizontal plane
-      cameraForward.normalize();
+      // Over-the-shoulder mode: analog stick controls
+      if (controls.analogMagnitude > 0.1) {
+        // Get camera's forward direction (projected onto XZ plane)
+        const cameraForward = new THREE.Vector3();
+        this.camera.getWorldDirection(cameraForward);
+        cameraForward.y = 0; // Project onto horizontal plane
+        cameraForward.normalize();
 
-      // Calculate camera's right direction
-      const cameraRight = new THREE.Vector3();
-      cameraRight.crossVectors(cameraForward, new THREE.Vector3(0, 1, 0));
-      cameraRight.normalize();
+        // Calculate camera's right direction
+        const cameraRight = new THREE.Vector3();
+        cameraRight.crossVectors(cameraForward, new THREE.Vector3(0, 1, 0));
+        cameraRight.normalize();
 
-      // Apply controls relative to camera orientation
-      if (controls.forward) {
-        moveVector.x += cameraForward.x;
-        moveVector.z += cameraForward.z;
-      }
-      if (controls.backward) {
-        moveVector.x -= cameraForward.x;
-        moveVector.z -= cameraForward.z;
-      }
-      if (controls.right) {
-        moveVector.x += cameraRight.x;
-        moveVector.z += cameraRight.z;
-      }
-      if (controls.left) {
-        moveVector.x -= cameraRight.x;
-        moveVector.z -= cameraRight.z;
+        // Convert analog stick angle to camera-relative direction
+        // Analog angle: 0 = right, π/2 = down, π = left, -π/2 = up
+        // We need: up = forward, down = backward, right = right, left = left
+        const stickX = Math.cos(controls.analogAngle);
+        const stickY = Math.sin(controls.analogAngle);
+
+        // Map stick Y (up/down) to camera forward/backward
+        // Negative stickY (up on screen) = forward
+        moveVector.x += -stickY * cameraForward.x;
+        moveVector.z += -stickY * cameraForward.z;
+
+        // Map stick X (left/right) to camera right/left
+        moveVector.x += stickX * cameraRight.x;
+        moveVector.z += stickX * cameraRight.z;
       }
     }
 
@@ -516,8 +515,12 @@ export class Player {
       moveVector.normalize();
 
       // Calculate target velocity
-      const targetVelocityX = moveVector.x * this.moveSpeed;
-      const targetVelocityZ = moveVector.z * this.moveSpeed;
+      // In over-the-shoulder mode, apply analog magnitude for variable speed
+      const speedMultiplier = this.cameraMode === 'over-shoulder'
+        ? controls.analogMagnitude
+        : 1.0;
+      const targetVelocityX = moveVector.x * this.moveSpeed * speedMultiplier;
+      const targetVelocityZ = moveVector.z * this.moveSpeed * speedMultiplier;
 
       // Smoothly accelerate towards target velocity
       const accelerationStep = this.acceleration * deltaTime;
