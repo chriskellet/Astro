@@ -60,6 +60,7 @@ export class Player {
   private targetRotationY: number = 0;
   private rotationSpeed: number = 8; // radians per second
   private actualRotationSpeed: number = 0; // actual rotation speed applied (for debug)
+  private lateralInputRatio: number = 1.0; // ratio of lateral to total input (for rotation scaling)
 
   // Idle animation system
   private idleTime: number = 0;
@@ -501,6 +502,11 @@ export class Player {
         const stickX = Math.cos(controls.analogAngle);
         const stickY = Math.sin(controls.analogAngle);
 
+        // Calculate lateral input ratio for rotation scaling
+        // When pushing mostly forward/back (low stickX), rotation should be slower
+        // When pushing left/right (high stickX), rotation should be faster
+        this.lateralInputRatio = Math.abs(stickX);
+
         // Map stick Y (up/down) to camera forward/backward
         // Negative stickY (up on screen) = forward
         moveVector.x += -stickY * cameraForward.x;
@@ -509,6 +515,9 @@ export class Player {
         // Map stick X (left/right) to camera right/left
         moveVector.x += stickX * cameraRight.x;
         moveVector.z += stickX * cameraRight.z;
+      } else {
+        // No input - reset lateral ratio to 1.0 for normal rotation when stopped
+        this.lateralInputRatio = 1.0;
       }
     }
 
@@ -1025,9 +1034,14 @@ export class Player {
     // Use slower rotation speed in over-the-shoulder mode to prevent dizziness
     let rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
 
-    // In over-the-shoulder mode, apply analog magnitude to rotation speed
+    // In over-the-shoulder mode, apply analog magnitude and lateral input scaling
     if (this.cameraMode === 'over-shoulder') {
+      // Scale by magnitude (how far stick is pushed)
       rotationSpeed *= controls.analogMagnitude;
+
+      // Scale by lateral input ratio (how much turning vs forward movement)
+      // Straight forward = slow turn, diagonal = medium turn, pure lateral = fast turn
+      rotationSpeed *= this.lateralInputRatio;
     }
 
     // Store actual rotation speed for debug display
