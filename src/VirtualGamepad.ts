@@ -168,7 +168,7 @@ export class VirtualGamepad {
     // Multi-zone analog control for fine adjustments
     const innerDeadZone = 10;  // True dead zone - no input
     const fineControlZone = 35; // Fine control zone - linear, small magnitude
-    const maxFineControlMagnitude = 0.2; // Cap fine control at 20% speed
+    const maxFineControlMagnitude = 0.05; // Cap fine control at 5% speed for tiny drift
 
     // Calculate analog values with multi-zone approach
     let magnitude = 0;
