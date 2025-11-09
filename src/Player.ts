@@ -483,7 +483,7 @@ export class Player {
       if (controls.backward) moveVector.z += 1;
     } else {
       // Over-the-shoulder mode: analog stick controls
-      if (controls.analogMagnitude > 0.1) {
+      if (controls.analogMagnitude > 0) {
         // Get camera's forward direction (projected onto XZ plane)
         const cameraForward = new THREE.Vector3();
         this.camera.getWorldDirection(cameraForward);
