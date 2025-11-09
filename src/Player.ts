@@ -77,8 +77,9 @@ export class Player {
     // Traditional camera: side view, elevated and pulled back
     this.traditionalCameraOffset = new THREE.Vector3(0, 8, 12);
 
-    // Over-the-shoulder camera: closer, higher, positioned behind and to the side
-    this.overShoulderCameraOffset = new THREE.Vector3(2, 5, 6);
+    // Over-the-shoulder camera: directly behind and elevated
+    // In player's local space: 0 right, 5 up, 7 behind (positive Z is behind when facing -Z)
+    this.overShoulderCameraOffset = new THREE.Vector3(0, 5, 7);
 
     this.state = {
       position: new THREE.Vector3(0, 7, 0),
