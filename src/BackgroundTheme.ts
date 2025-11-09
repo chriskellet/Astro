@@ -151,62 +151,8 @@ export class BackgroundTheme {
   }
 
   private createSunnyDayBackground(): void {
-    // Define field colors for use throughout the background
-    const fieldColors = [
-      new THREE.Color(0x8bc34a), // Light green
-      new THREE.Color(0x7cb342), // Medium green
-      new THREE.Color(0x689f38), // Dark green
-      new THREE.Color(0xaed581), // Bright green
-      new THREE.Color(0x9ccc65), // Yellow-green
-      new THREE.Color(0xcddc39), // Lime
-    ];
-
-    try {
-      // Large ground plane extending to horizon
-      // Positioned far back like the mountains so it's visible at a shallow camera angle
-      // The camera looks at the player, so ground must be distant to be in view
-      const groundGeometry = new THREE.PlaneGeometry(2000, 600, 100, 30);
-      const groundMaterial = new THREE.MeshBasicMaterial({
-        vertexColors: true,
-      });
-      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-      ground.rotation.x = -Math.PI / 2;
-      ground.position.set(100, -55, -350); // Far back in Z, centered on level path X:0-200
-
-      // Add procedural color variation to create field patterns
-      const colors: number[] = [];
-      const color = new THREE.Color();
-
-      const positionAttribute = groundGeometry.attributes.position;
-      const gridSize = 20; // Size of each "field"
-
-      for (let i = 0; i < positionAttribute.count; i++) {
-        const x = positionAttribute.getX(i);
-        const z = positionAttribute.getZ(i);
-
-        // Determine which field this vertex belongs to
-        const fieldX = Math.floor(x / gridSize);
-        const fieldZ = Math.floor(z / gridSize);
-        const fieldIndex = Math.abs((fieldX * 7 + fieldZ * 11)) % fieldColors.length;
-
-        // Add some variation within the field
-        const variation = 0.9 + Math.random() * 0.2;
-        color.copy(fieldColors[fieldIndex]).multiplyScalar(variation);
-
-        colors.push(color.r, color.g, color.b);
-
-        // Add subtle height variation for terrain
-        const height = (Math.sin(x * 0.02) + Math.cos(z * 0.02)) * 1.5 + Math.random() * 0.5;
-        positionAttribute.setY(i, height);
-      }
-
-      positionAttribute.needsUpdate = true;
-      groundGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-      groundGeometry.computeVertexNormals();
-      this.addBackgroundObject(ground);
-    } catch (error) {
-      console.error('Error creating sunny day ground:', error);
-    }
+    // Add floating cloud layer beneath the platforms
+    this.createCloudLayer(1);
 
     // Distant mountain ranges on the horizon
     for (let i = 0; i < 15; i++) {
@@ -285,6 +231,9 @@ export class BackgroundTheme {
   }
 
   private createSunsetBackground(): void {
+    // Add floating cloud layer beneath the platforms
+    this.createCloudLayer(2);
+
     // Floating islands at various heights (more visible from above)
     for (let i = 0; i < 6; i++) {
       const island = this.createFloatingIsland();
@@ -322,21 +271,12 @@ export class BackgroundTheme {
         lantern.scale.set(scale, scale, scale);
       });
     }
-
-    // Distant water/ocean floor plane with waves (expanded to be more visible)
-    const waterGeometry = new THREE.PlaneGeometry(2000, 400, 20, 20);
-    const waterMaterial = new THREE.MeshBasicMaterial({
-      color: 0x3a6ea5,
-      transparent: true,
-      opacity: 0.4,
-    });
-    const water = new THREE.Mesh(waterGeometry, waterMaterial);
-    water.rotation.x = -Math.PI / 2;
-    water.position.set(80, -35, -100); // Positioned far enough to be visible at shallow angle
-    this.addBackgroundObject(water);
   }
 
   private createMountainBackground(): void {
+    // Add floating cloud layer beneath the platforms
+    this.createCloudLayer(3);
+
     // Large distant mountain peaks on the horizon
     for (let i = 0; i < 8; i++) {
       const mountain = this.createMountain();
@@ -400,19 +340,12 @@ export class BackgroundTheme {
         crystal.position.y += Math.sin(Date.now() * 0.001) * dt * 0.5;
       });
     }
-
-    // Rocky/snowy ground plane
-    const groundGeometry = new THREE.PlaneGeometry(2000, 500, 50, 50);
-    const groundMaterial = new THREE.MeshBasicMaterial({
-      color: 0xe0e0e0, // Light gray for snow/rock
-    });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(80, -40, -120); // Positioned far enough to be visible at shallow angle
-    this.addBackgroundObject(ground);
   }
 
   private createTwilightBackground(): void {
+    // Add floating cloud layer beneath the platforms
+    this.createCloudLayer(4);
+
     // Glowing mushrooms scattered on the ground
     for (let i = 0; i < 20; i++) {
       const mushroom = this.createGlowingMushroom();
@@ -485,19 +418,12 @@ export class BackgroundTheme {
         bat.rotation.y = time + angleOffset + Math.PI / 2;
       });
     }
-
-    // Dark forest floor ground plane
-    const groundGeometry = new THREE.PlaneGeometry(2000, 400, 50, 50);
-    const groundMaterial = new THREE.MeshBasicMaterial({
-      color: 0x2d1f3d, // Dark purple-brown for twilight forest
-    });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(75, -35, -90); // Positioned far enough to be visible at shallow angle
-    this.addBackgroundObject(ground);
   }
 
   private createSpaceBackground(): void {
+    // Add floating cloud layer beneath the platforms
+    this.createCloudLayer(5);
+
     // Large planets visible on the horizon/below
     const planets = [
       { color: 0xff6b4a, size: 25, position: new THREE.Vector3(-70, -20, -120) },
@@ -580,18 +506,6 @@ export class BackgroundTheme {
       spaceStation.rotation.y += dt * 0.3;
       spaceStation.position.y = Math.sin(Date.now() * 0.0005) * 5;
     });
-
-    // Deep space nebula ground plane
-    const groundGeometry = new THREE.PlaneGeometry(2000, 500, 50, 50);
-    const groundMaterial = new THREE.MeshBasicMaterial({
-      color: 0x1a0a2e, // Deep purple space color
-      transparent: true,
-      opacity: 0.7,
-    });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.set(95, -45, -120); // Positioned far enough to be visible at shallow angle
-    this.addBackgroundObject(ground);
   }
 
   // Helper methods to create various objects
@@ -622,6 +536,140 @@ export class BackgroundTheme {
     });
 
     return cloud;
+  }
+
+  private createCumulonimbus(baseColor: number = 0xffffff, opacity: number = 0.85): THREE.Group {
+    const cloud = new THREE.Group();
+    const sphereGeometry = new THREE.SphereGeometry(1, 16, 16);
+    const cloudMaterial = new THREE.MeshBasicMaterial({
+      color: baseColor,
+      transparent: true,
+      opacity: opacity,
+    });
+
+    // Create a large, dense, volumetric cumulonimbus cloud
+    // These clouds are much larger and more defined than puffy clouds
+    const positions = [
+      // Bottom layer - wide base
+      [0, 0, 0, 6],
+      [5, 0, 0, 5],
+      [-5, 0, 0, 5],
+      [0, 0, 4, 5],
+      [0, 0, -4, 5],
+      [3.5, 0, 3.5, 4],
+      [-3.5, 0, 3.5, 4],
+      [3.5, 0, -3.5, 4],
+      [-3.5, 0, -3.5, 4],
+
+      // Middle layer - building up
+      [0, 3, 0, 5.5],
+      [4, 3, 0, 4.5],
+      [-4, 3, 0, 4.5],
+      [0, 3, 3, 4.5],
+      [0, 3, -3, 4.5],
+      [2.5, 3, 2.5, 3.5],
+      [-2.5, 3, 2.5, 3.5],
+
+      // Upper layer - towering top
+      [0, 6, 0, 4.5],
+      [2.5, 6, 0, 3.5],
+      [-2.5, 6, 0, 3.5],
+      [0, 6, 2, 3.5],
+      [0, 8, 0, 3.5],
+      [1.5, 8, 0, 2.5],
+      [-1.5, 8, 0, 2.5],
+
+      // Top puffs
+      [0, 10, 0, 3],
+      [1, 10.5, 0, 2],
+      [-1, 10.5, 0, 2],
+    ];
+
+    positions.forEach(([x, y, z, scale]) => {
+      const sphere = new THREE.Mesh(sphereGeometry, cloudMaterial.clone());
+      sphere.position.set(x, y, z);
+      sphere.scale.setScalar(scale);
+      cloud.add(sphere);
+    });
+
+    return cloud;
+  }
+
+  private createCloudLayer(levelNumber: number): void {
+    // Determine cloud color and opacity based on level theme
+    let cloudColor = 0xffffff;
+    let cloudOpacity = 0.85;
+
+    switch (levelNumber) {
+      case 1: // Sunny - bright white clouds
+        cloudColor = 0xffffff;
+        cloudOpacity = 0.9;
+        break;
+      case 2: // Sunset - orange/pink tinted clouds
+        cloudColor = 0xffccaa;
+        cloudOpacity = 0.8;
+        break;
+      case 3: // Mountain - cool white/blue clouds
+        cloudColor = 0xf0f8ff;
+        cloudOpacity = 0.85;
+        break;
+      case 4: // Twilight - purple/dark clouds
+        cloudColor = 0x6a5a7a;
+        cloudOpacity = 0.7;
+        break;
+      case 5: // Space - nebula clouds
+        cloudColor = 0x8844ff;
+        cloudOpacity = 0.6;
+        break;
+    }
+
+    // Create a dense layer of cumulonimbus clouds floating 20-30m below platforms
+    // Platforms are generally around y=0, so clouds should be at y=-20 to -30
+    const numClouds = 25; // Dense coverage
+    const cloudBaseY = -25; // 25m below platform level
+
+    for (let i = 0; i < numClouds; i++) {
+      const cloud = this.createCumulonimbus(cloudColor, cloudOpacity);
+
+      // Spread clouds across the level path and beyond
+      const xPos = (i * 25) - 150 + (Math.random() - 0.5) * 40; // Along level path with variation
+      const yPos = cloudBaseY + (Math.random() - 0.5) * 10; // 20-30m below platforms
+      const zPos = (Math.random() - 0.5) * 120; // Depth variation
+
+      cloud.position.set(xPos, yPos, zPos);
+
+      // Random rotation for variety
+      cloud.rotation.y = Math.random() * Math.PI * 2;
+
+      // Vary size slightly
+      const sizeVariation = 0.8 + Math.random() * 0.5;
+      cloud.scale.setScalar(sizeVariation);
+
+      // Animate clouds floating horizontally
+      const driftSpeed = 0.5 + Math.random() * 1.0;
+      const driftDirection = Math.random() > 0.5 ? 1 : -1;
+      const bobSpeed = 0.3 + Math.random() * 0.4;
+      const bobOffset = Math.random() * Math.PI * 2;
+
+      this.addBackgroundObject(cloud, (dt) => {
+        // Horizontal drift
+        cloud.position.x += driftSpeed * driftDirection * dt;
+
+        // Wrap around when clouds drift too far
+        if (cloud.position.x > 300) {
+          cloud.position.x = -300;
+        } else if (cloud.position.x < -300) {
+          cloud.position.x = 300;
+        }
+
+        // Subtle vertical bobbing
+        const baseY = cloudBaseY + (yPos - cloudBaseY);
+        cloud.position.y = baseY + Math.sin(Date.now() * 0.001 * bobSpeed + bobOffset) * 1.5;
+
+        // Slow rotation
+        cloud.rotation.y += dt * 0.05;
+      });
+    }
   }
 
   private createBird(): THREE.Mesh {
