@@ -14,6 +14,7 @@ export class VirtualGamepad {
   private doubleTapWindow: number = 300; // milliseconds
   private onCameraToggle?: () => void;
   private dpadTouchPosition: { x: number; y: number } | null = null;
+  private dpadFloatingCenter: { x: number; y: number } | null = null; // Re-centers on touch
   private debugMode: boolean = false;
   private debugInfo: {
     rotationSpeed: number;
@@ -84,6 +85,8 @@ export class VirtualGamepad {
 
       if (dpadDist < this.dpadRadius * 1.5) {
         this.touches.set(touch.identifier, { x, y, zone: 'dpad' });
+        // Set floating center to initial touch position
+        this.dpadFloatingCenter = { x, y };
         this.updateDpad(x, y);
       }
 
@@ -172,6 +175,7 @@ export class VirtualGamepad {
           this.controls.analogMagnitude = 0;
           this.controls.analogAngle = 0;
           this.dpadTouchPosition = null;
+          this.dpadFloatingCenter = null; // Reset floating center
         } else if (touchData.zone === 'jump') {
           this.controls.jump = false;
           this.controls.booster = false;
@@ -183,21 +187,25 @@ export class VirtualGamepad {
   }
 
   private updateDpad(x: number, y: number): void {
-    const dx = x - this.dpadCenter.x;
-    const dy = y - this.dpadCenter.y;
+    // Use floating center (set on touch start) for calculations
+    const centerX = this.dpadFloatingCenter?.x ?? this.dpadCenter.x;
+    const centerY = this.dpadFloatingCenter?.y ?? this.dpadCenter.y;
+
+    const dx = x - centerX;
+    const dy = y - centerY;
     const angle = Math.atan2(dy, dx);
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Multi-zone analog control for fine adjustments
-    const innerDeadZone = 10;  // True dead zone - no input
-    const fineControlZone = 35; // Fine control zone - linear, small magnitude
+    // Multi-zone analog control with floating center
+    const innerDeadZone = 5;   // Tiny dead zone to prevent finger jitter
+    const fineControlZone = 25; // Fine control zone - linear, small magnitude
     const maxFineControlMagnitude = 0.05; // Cap fine control at 5% speed for tiny drift
 
     // Calculate analog values with multi-zone approach
     let magnitude = 0;
 
     if (distance <= innerDeadZone) {
-      // True dead zone - no input
+      // Tiny dead zone - prevents jitter from resting finger
       magnitude = 0;
     } else if (distance <= fineControlZone) {
       // Fine control zone - linear mapping to small magnitude for precise adjustments
@@ -344,6 +352,17 @@ export class VirtualGamepad {
     this.ctx.fillText('📷', this.cameraButton.x, this.cameraButton.y);
     this.ctx.restore();
 
+    // Draw floating center indicator
+    if (this.dpadFloatingCenter) {
+      this.ctx.save();
+      this.ctx.fillStyle = '#00ff00';
+      this.ctx.globalAlpha = 0.5;
+      this.ctx.beginPath();
+      this.ctx.arc(this.dpadFloatingCenter.x, this.dpadFloatingCenter.y, 8, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+
     // Draw D-pad touch indicator
     if (this.dpadTouchPosition) {
       this.ctx.save();
@@ -366,8 +385,11 @@ export class VirtualGamepad {
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'top';
 
-      const dx = this.dpadTouchPosition ? (this.dpadTouchPosition.x - this.dpadCenter.x).toFixed(1) : '0.0';
-      const dy = this.dpadTouchPosition ? (this.dpadTouchPosition.y - this.dpadCenter.y).toFixed(1) : '0.0';
+      // Calculate distance from floating center (or fixed center if no floating center)
+      const centerX = this.dpadFloatingCenter?.x ?? this.dpadCenter.x;
+      const centerY = this.dpadFloatingCenter?.y ?? this.dpadCenter.y;
+      const dx = this.dpadTouchPosition ? (this.dpadTouchPosition.x - centerX).toFixed(1) : '0.0';
+      const dy = this.dpadTouchPosition ? (this.dpadTouchPosition.y - centerY).toFixed(1) : '0.0';
       const mag = this.controls.analogMagnitude.toFixed(3);
       const angle = this.controls.analogAngle.toFixed(2);
 
