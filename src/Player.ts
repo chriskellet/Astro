@@ -1014,7 +1014,9 @@ export class Player {
     while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
 
     // Smoothly interpolate rotation
-    const maxRotationStep = this.rotationSpeed * deltaTime;
+    // Use slower rotation speed in over-the-shoulder mode to prevent dizziness
+    const rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
+    const maxRotationStep = rotationSpeed * deltaTime;
 
     if (Math.abs(rotationDiff) < maxRotationStep) {
       // Close enough, snap to target

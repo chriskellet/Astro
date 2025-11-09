@@ -165,9 +165,21 @@ export class VirtualGamepad {
     const angle = Math.atan2(dy, dx);
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Calculate analog values
-    // Magnitude is 0-1 based on how far from center (clamped to radius)
-    this.controls.analogMagnitude = Math.min(distance / this.dpadRadius, 1.0);
+    // Dead zone threshold - larger for better control
+    const deadZone = 35;
+
+    // Calculate analog values with dead zone and non-linear curve
+    let magnitude = 0;
+    if (distance > deadZone) {
+      // Map distance from deadZone to radius -> 0 to 1
+      const adjustedDistance = (distance - deadZone) / (this.dpadRadius - deadZone);
+      magnitude = Math.min(adjustedDistance, 1.0);
+
+      // Apply quadratic curve for smoother acceleration (starts slow, ramps up)
+      magnitude = magnitude * magnitude;
+    }
+
+    this.controls.analogMagnitude = magnitude;
     this.controls.analogAngle = angle;
 
     // Reset all directions
@@ -176,7 +188,7 @@ export class VirtualGamepad {
     this.controls.forward = false;
     this.controls.backward = false;
 
-    if (distance > 20) {
+    if (distance > deadZone) {
       // Convert angle to direction (8-way movement)
       const deg = angle * (180 / Math.PI);
 
