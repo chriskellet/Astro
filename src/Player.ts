@@ -59,6 +59,8 @@ export class Player {
   private isWalking: boolean = false;
   private targetRotationY: number = 0;
   private rotationSpeed: number = 8; // radians per second
+  private actualRotationSpeed: number = 0; // actual rotation speed applied (for debug)
+  private lateralInputRatio: number = 1.0; // ratio of lateral to total input (for rotation scaling)
 
   // Idle animation system
   private idleTime: number = 0;
@@ -646,7 +648,7 @@ export class Player {
       if (controls.backward) moveVector.z += 1;
     } else {
       // Over-the-shoulder mode: analog stick controls
-      if (controls.analogMagnitude > 0.1) {
+      if (controls.analogMagnitude > 0) {
         // Get camera's forward direction (projected onto XZ plane)
         const cameraForward = new THREE.Vector3();
         this.camera.getWorldDirection(cameraForward);
@@ -664,6 +666,11 @@ export class Player {
         const stickX = Math.cos(controls.analogAngle);
         const stickY = Math.sin(controls.analogAngle);
 
+        // Calculate lateral input ratio for rotation scaling
+        // When pushing mostly forward/back (low stickX), rotation should be slower
+        // When pushing left/right (high stickX), rotation should be faster
+        this.lateralInputRatio = Math.abs(stickX);
+
         // Map stick Y (up/down) to camera forward/backward
         // Negative stickY (up on screen) = forward
         moveVector.x += -stickY * cameraForward.x;
@@ -672,29 +679,65 @@ export class Player {
         // Map stick X (left/right) to camera right/left
         moveVector.x += stickX * cameraRight.x;
         moveVector.z += stickX * cameraRight.z;
+      } else {
+        // No input - reset lateral ratio to 1.0 for normal rotation when stopped
+        this.lateralInputRatio = 1.0;
       }
     }
 
     if (moveVector.length() > 0) {
       moveVector.normalize();
 
-      // Calculate target velocity
-      // In over-the-shoulder mode, apply analog magnitude for variable speed
-      const speedMultiplier = this.cameraMode === 'over-shoulder'
-        ? controls.analogMagnitude
-        : 1.0;
-      const targetVelocityX = moveVector.x * this.moveSpeed * speedMultiplier;
-      const targetVelocityZ = moveVector.z * this.moveSpeed * speedMultiplier;
-
-      // Smoothly accelerate towards target velocity
-      const accelerationStep = this.acceleration * deltaTime;
-      this.state.velocity.x += Math.sign(targetVelocityX - this.state.velocity.x) *
-        Math.min(Math.abs(targetVelocityX - this.state.velocity.x), accelerationStep);
-      this.state.velocity.z += Math.sign(targetVelocityZ - this.state.velocity.z) *
-        Math.min(Math.abs(targetVelocityZ - this.state.velocity.z), accelerationStep);
-
-      // Set target rotation to face movement direction
+      // Always update target rotation based on stick direction
       this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
+
+      // Only apply movement if magnitude is above threshold
+      // This allows rotation without movement for fine adjustments
+      const movementThreshold = this.cameraMode === 'over-shoulder' ? 0.15 : 0.0;
+
+      if (controls.analogMagnitude > movementThreshold || this.cameraMode === 'traditional') {
+        // Calculate target velocity
+        // In over-the-shoulder mode, apply analog magnitude for variable speed
+        const speedMultiplier = this.cameraMode === 'over-shoulder'
+          ? controls.analogMagnitude
+          : 1.0;
+        const targetVelocityX = moveVector.x * this.moveSpeed * speedMultiplier;
+        const targetVelocityZ = moveVector.z * this.moveSpeed * speedMultiplier;
+
+        if (this.cameraMode === 'over-shoulder') {
+          // Over-shoulder mode: Direct velocity response (analog stick already provides smoothing)
+          // Use high lerp factor for immediate response
+          this.state.velocity.x = THREE.MathUtils.lerp(this.state.velocity.x, targetVelocityX, 0.3);
+          this.state.velocity.z = THREE.MathUtils.lerp(this.state.velocity.z, targetVelocityZ, 0.3);
+        } else {
+          // Traditional mode: Smoothly accelerate towards target velocity
+          const accelerationStep = this.acceleration * deltaTime;
+          this.state.velocity.x += Math.sign(targetVelocityX - this.state.velocity.x) *
+            Math.min(Math.abs(targetVelocityX - this.state.velocity.x), accelerationStep);
+          this.state.velocity.z += Math.sign(targetVelocityZ - this.state.velocity.z) *
+            Math.min(Math.abs(targetVelocityZ - this.state.velocity.z), accelerationStep);
+        }
+      } else {
+        // Below movement threshold - apply friction (allows rotation without movement)
+        const friction = this.getFrictionForSurface(this.currentSurfaceType);
+        const frictionStep = friction * deltaTime;
+
+        if (Math.abs(this.state.velocity.x) < this.minVelocityThreshold) {
+          this.state.velocity.x = 0;
+        } else if (Math.abs(this.state.velocity.x) > frictionStep) {
+          this.state.velocity.x -= Math.sign(this.state.velocity.x) * frictionStep;
+        } else {
+          this.state.velocity.x = 0;
+        }
+
+        if (Math.abs(this.state.velocity.z) < this.minVelocityThreshold) {
+          this.state.velocity.z = 0;
+        } else if (Math.abs(this.state.velocity.z) > frictionStep) {
+          this.state.velocity.z -= Math.sign(this.state.velocity.z) * frictionStep;
+        } else {
+          this.state.velocity.z = 0;
+        }
+      }
     } else {
       // Apply non-linear friction to decelerate based on surface type
       const friction = this.getFrictionForSurface(this.currentSurfaceType);
@@ -722,7 +765,7 @@ export class Player {
     }
 
     // Smoothly interpolate rotation towards target
-    this.updateRotation(deltaTime);
+    this.updateRotation(deltaTime, controls);
 
     // Apply gravity
     this.physics.applyGravity(this.state.velocity, deltaTime);
@@ -1169,7 +1212,7 @@ export class Player {
     }
   }
 
-  private updateRotation(deltaTime: number): void {
+  private updateRotation(deltaTime: number, controls: Controls): void {
     // Calculate the shortest rotation difference
     let rotationDiff = this.targetRotationY - this.mesh.rotation.y;
 
@@ -1179,7 +1222,21 @@ export class Player {
 
     // Smoothly interpolate rotation
     // Use slower rotation speed in over-the-shoulder mode to prevent dizziness
-    const rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
+    let rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
+
+    // In over-the-shoulder mode, apply analog magnitude and lateral input scaling
+    if (this.cameraMode === 'over-shoulder') {
+      // Scale by magnitude (how far stick is pushed)
+      rotationSpeed *= controls.analogMagnitude;
+
+      // Scale by lateral input ratio (how much turning vs forward movement)
+      // Straight forward = slow turn, diagonal = medium turn, pure lateral = fast turn
+      rotationSpeed *= this.lateralInputRatio;
+    }
+
+    // Store actual rotation speed for debug display
+    this.actualRotationSpeed = rotationSpeed;
+
     const maxRotationStep = rotationSpeed * deltaTime;
 
     if (Math.abs(rotationDiff) < maxRotationStep) {
@@ -1239,12 +1296,9 @@ export class Player {
   }
 
   public getDebugInfo(): { rotationSpeed: number; forwardSpeed: number; lateralSpeed: number } {
-    // Calculate actual rotation speed applied this frame
-    const rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
-
-    // Forward speed is Z velocity, lateral is X velocity
+    // Return the actual rotation speed that was applied in the last update
     return {
-      rotationSpeed: rotationSpeed,
+      rotationSpeed: this.actualRotationSpeed,
       forwardSpeed: this.state.velocity.z,
       lateralSpeed: this.state.velocity.x,
     };
