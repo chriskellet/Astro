@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Platform } from './types';
+import { Platform, SurfaceType } from './types';
 
 export class Physics {
   private gravity: number = -25;
@@ -17,9 +17,10 @@ export class Physics {
     playerHeight: number,
     platforms: Platform[],
     previousPlatform: Platform | null = null
-  ): { grounded: boolean; platform: Platform | null } {
+  ): { grounded: boolean; platform: Platform | null; surfaceType: SurfaceType } {
     let grounded = false;
     let groundPlatform: Platform | null = null;
+    let surfaceType: SurfaceType = 'default';
 
     for (const platform of platforms) {
       // Skip platforms that are falling and invisible
@@ -47,6 +48,7 @@ export class Physics {
           velocity.y = 0;
           grounded = true;
           groundPlatform = platform;
+          surfaceType = platform.surfaceType || 'default';
 
           // Handle special platform types
           this.handlePlatformSpecialBehavior(platform, velocity);
@@ -89,7 +91,7 @@ export class Physics {
       }
     }
 
-    return { grounded, platform: groundPlatform };
+    return { grounded, platform: groundPlatform, surfaceType };
   }
 
   private applyPlatformMovement(position: THREE.Vector3, platform: Platform): void {

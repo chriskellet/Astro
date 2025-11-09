@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Platform, Collectible, LevelData, Enemy, CollectibleType, EnemyType } from './types';
+import { Platform, Collectible, LevelData, Enemy, CollectibleType, EnemyType, SurfaceType } from './types';
 import { EnemyFactory } from './EnemyFactory';
 
 export class Level {
@@ -32,44 +32,58 @@ export class Level {
     }
   }
 
-  // Level 1: Tutorial - Basic platforming, ~3 minutes
+  private getColorForSurface(surfaceType: SurfaceType): number {
+    switch (surfaceType) {
+      case 'ice':
+        return 0xadd8e6; // Light blue - icy appearance
+      case 'grass':
+        return 0x50c878; // Green - grassy appearance
+      case 'stone':
+        return 0x808080; // Gray - stone appearance
+      case 'default':
+      default:
+        return 0x4a90e2; // Default blue
+    }
+  }
+
+  // Level 1: Tutorial - Basic platforming with surface physics, ~3 minutes
   private createLevel1(): LevelData {
     const platforms: Platform[] = [];
     const collectibles: Collectible[] = [];
     const enemies: Enemy[] = [];
 
-    // Starting platform
-    platforms.push(this.createPlatform(0, 0, 0, 12, 1, 12, 0x4a90e2));
+    // Starting platform - grass for good grip
+    platforms.push(this.createPlatform(0, 0, 0, 12, 1, 12, 0x4a90e2, 'static', 'grass'));
 
-    // Section 1: Basic jumping (0-40)
-    platforms.push(this.createPlatform(10, 1, 0, 8, 1, 8, 0x50c878));
-    platforms.push(this.createPlatform(20, 2, -3, 6, 1, 6, 0x50c878));
-    platforms.push(this.createPlatform(28, 3, 2, 7, 1, 7, 0x50c878));
-    platforms.push(this.createPlatform(36, 4, -2, 6, 1, 6, 0x50c878));
+    // Section 1: Basic jumping with grass and stone (0-40)
+    platforms.push(this.createPlatform(10, 1, 0, 8, 1, 8, 0x50c878, 'static', 'grass'));
+    platforms.push(this.createPlatform(20, 2, -3, 6, 1, 6, 0x50c878, 'static', 'stone'));
+    platforms.push(this.createPlatform(28, 3, 2, 7, 1, 7, 0x50c878, 'static', 'grass'));
+    platforms.push(this.createPlatform(36, 4, -2, 6, 1, 6, 0x50c878, 'static', 'stone'));
 
-    // Section 2: Floating platforms (40-80)
-    platforms.push(this.createPlatform(44, 5, 3, 5, 1, 5, 0xffa500));
-    platforms.push(this.createPlatform(50, 6, -4, 4, 1, 4, 0xffa500));
-    platforms.push(this.createPlatform(56, 7, 2, 5, 1, 5, 0xffa500));
-    platforms.push(this.createPlatform(63, 8, -3, 6, 1, 6, 0x50c878));
-    platforms.push(this.createPlatform(70, 7, 4, 6, 1, 6, 0x50c878));
-    platforms.push(this.createPlatform(78, 6, -2, 7, 1, 7, 0x50c878));
+    // Section 2: Ice blocks - slippery challenge! (40-80)
+    platforms.push(this.createPlatform(44, 5, 3, 5, 1, 5, 0xffa500, 'static', 'ice'));
+    platforms.push(this.createPlatform(50, 6, -4, 4, 1, 4, 0xffa500, 'static', 'ice'));
+    platforms.push(this.createPlatform(56, 7, 2, 5, 1, 5, 0xffa500, 'static', 'ice'));
+    platforms.push(this.createPlatform(63, 8, -3, 6, 1, 6, 0x50c878, 'static', 'stone'));
+    platforms.push(this.createPlatform(70, 7, 4, 6, 1, 6, 0x50c878, 'static', 'grass'));
+    platforms.push(this.createPlatform(78, 6, -2, 7, 1, 7, 0x50c878, 'static', 'stone'));
 
-    // Section 3: Walls and obstacles (80-120)
-    platforms.push(this.createPlatform(86, 5, 3, 8, 1, 8, 0x50c878));
-    platforms.push(this.createPlatform(88, 8, 3, 2, 4, 2, 0x888888)); // Wall
-    platforms.push(this.createPlatform(95, 6, -5, 7, 1, 7, 0x50c878));
-    platforms.push(this.createPlatform(103, 7, 2, 6, 1, 6, 0x50c878));
-    platforms.push(this.createPlatform(110, 8, -3, 8, 1, 8, 0x50c878));
-    platforms.push(this.createPlatform(118, 7, 4, 7, 1, 7, 0x50c878));
+    // Section 3: Stone platforms - good grip (80-120)
+    platforms.push(this.createPlatform(86, 5, 3, 8, 1, 8, 0x50c878, 'static', 'stone'));
+    platforms.push(this.createPlatform(88, 8, 3, 2, 4, 2, 0x888888, 'static', 'stone')); // Wall
+    platforms.push(this.createPlatform(95, 6, -5, 7, 1, 7, 0x50c878, 'static', 'stone'));
+    platforms.push(this.createPlatform(103, 7, 2, 6, 1, 6, 0x50c878, 'static', 'stone'));
+    platforms.push(this.createPlatform(110, 8, -3, 8, 1, 8, 0x50c878, 'static', 'grass'));
+    platforms.push(this.createPlatform(118, 7, 4, 7, 1, 7, 0x50c878, 'static', 'grass'));
 
-    // Section 4: Final stretch (120-150)
-    platforms.push(this.createPlatform(126, 8, -2, 6, 1, 6, 0x50c878));
-    platforms.push(this.createPlatform(133, 9, 3, 5, 1, 5, 0xffa500));
-    platforms.push(this.createPlatform(139, 10, -1, 6, 1, 6, 0x50c878));
+    // Section 4: Mixed surfaces - final challenge (120-150)
+    platforms.push(this.createPlatform(126, 8, -2, 6, 1, 6, 0x50c878, 'static', 'ice'));
+    platforms.push(this.createPlatform(133, 9, 3, 5, 1, 5, 0xffa500, 'static', 'stone'));
+    platforms.push(this.createPlatform(139, 10, -1, 6, 1, 6, 0x50c878, 'static', 'grass'));
 
-    // End platform
-    platforms.push(this.createPlatform(148, 11, 2, 10, 2, 10, 0xff6b6b));
+    // End platform - grass for safe landing
+    platforms.push(this.createPlatform(148, 11, 2, 10, 2, 10, 0xff6b6b, 'static', 'grass'));
 
     // Collectibles with varied patterns
     collectibles.push(...this.createCollectiblePair(10, 3, 0, 10));
@@ -106,41 +120,41 @@ export class Level {
     };
   }
 
-  // Level 2: Introduces elevators and moving platforms, ~3 minutes
+  // Level 2: Introduces elevators and moving platforms with surface physics, ~3 minutes
   private createLevel2(): LevelData {
     const platforms: Platform[] = [];
     const collectibles: Collectible[] = [];
     const enemies: Enemy[] = [];
 
-    // Starting platform
-    platforms.push(this.createPlatform(0, 0, 0, 12, 1, 12, 0x4a90e2));
+    // Starting platform - grass
+    platforms.push(this.createPlatform(0, 0, 0, 12, 1, 12, 0x4a90e2, 'static', 'grass'));
 
     // Section 1: Introduction to elevators (0-50)
-    platforms.push(this.createPlatform(10, 2, 0, 7, 1, 7, 0x50c878));
-    platforms.push(this.createElevatorPlatform(18, 3, -3, 7, 1, 7, 5, 0.8));
-    platforms.push(this.createPlatform(27, 8, 2, 6, 1, 6, 0x50c878));
-    platforms.push(this.createElevatorPlatform(35, 5, -2, 7, 1, 7, 6, 1.0));
-    platforms.push(this.createPlatform(45, 11, 3, 7, 1, 7, 0x50c878));
+    platforms.push(this.createPlatform(10, 2, 0, 7, 1, 7, 0x50c878, 'static', 'stone'));
+    platforms.push(this.createElevatorPlatform(18, 3, -3, 7, 1, 7, 5, 0.8, 0x9370db, 'ice')); // Icy elevator!
+    platforms.push(this.createPlatform(27, 8, 2, 6, 1, 6, 0x50c878, 'static', 'grass'));
+    platforms.push(this.createElevatorPlatform(35, 5, -2, 7, 1, 7, 6, 1.0, 0x9370db, 'stone'));
+    platforms.push(this.createPlatform(45, 11, 3, 7, 1, 7, 0x50c878, 'static', 'grass'));
 
-    // Section 2: Moving platforms (50-90)
-    platforms.push(this.createMovingPlatform(55, 7, -3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 8));
-    platforms.push(this.createPlatform(65, 8, 4, 6, 1, 6, 0x50c878));
-    platforms.push(this.createMovingPlatform(73, 9, -4, 5, 1, 5, new THREE.Vector3(0, 0, 1), 6));
-    platforms.push(this.createPlatform(82, 10, 2, 7, 1, 7, 0x50c878));
+    // Section 2: Moving platforms with ice (50-90)
+    platforms.push(this.createMovingPlatform(55, 7, -3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 8, 2, 0x20b2aa, 'ice'));
+    platforms.push(this.createPlatform(65, 8, 4, 6, 1, 6, 0x50c878, 'static', 'stone'));
+    platforms.push(this.createMovingPlatform(73, 9, -4, 5, 1, 5, new THREE.Vector3(0, 0, 1), 6, 2, 0x20b2aa, 'ice'));
+    platforms.push(this.createPlatform(82, 10, 2, 7, 1, 7, 0x50c878, 'static', 'grass'));
 
     // Section 3: Combined elevators and moving (90-130)
-    platforms.push(this.createElevatorPlatform(92, 9, -3, 7, 1, 7, 4, 0.9));
-    platforms.push(this.createMovingPlatform(102, 13, 3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 6));
-    platforms.push(this.createElevatorPlatform(111, 11, -2, 7, 1, 7, 5, 1.0));
-    platforms.push(this.createPlatform(122, 16, 4, 7, 1, 7, 0x50c878));
-    platforms.push(this.createPlatform(130, 13, -3, 8, 1, 8, 0x50c878));
+    platforms.push(this.createElevatorPlatform(92, 9, -3, 7, 1, 7, 4, 0.9, 0x9370db, 'stone'));
+    platforms.push(this.createMovingPlatform(102, 13, 3, 5, 1, 5, new THREE.Vector3(1, 0, 0), 6, 2, 0x20b2aa, 'grass'));
+    platforms.push(this.createElevatorPlatform(111, 11, -2, 7, 1, 7, 5, 1.0, 0x9370db, 'grass'));
+    platforms.push(this.createPlatform(122, 16, 4, 7, 1, 7, 0x50c878, 'static', 'stone'));
+    platforms.push(this.createPlatform(130, 13, -3, 8, 1, 8, 0x50c878, 'static', 'ice')); // Icy landing!
 
-    // Section 4: Challenge section (130-160)
-    platforms.push(this.createMovingPlatform(140, 14, 2, 5, 1, 5, new THREE.Vector3(1, 0, 0), 10));
-    platforms.push(this.createElevatorPlatform(152, 12, -1, 7, 1, 7, 6, 0.8));
+    // Section 4: Challenge section with mixed surfaces (130-160)
+    platforms.push(this.createMovingPlatform(140, 14, 2, 5, 1, 5, new THREE.Vector3(1, 0, 0), 10, 2, 0x20b2aa, 'ice'));
+    platforms.push(this.createElevatorPlatform(152, 12, -1, 7, 1, 7, 6, 0.8, 0x9370db, 'stone'));
 
-    // End platform
-    platforms.push(this.createPlatform(164, 16, 2, 10, 2, 10, 0xff6b6b));
+    // End platform - grass for safe finish
+    platforms.push(this.createPlatform(164, 16, 2, 10, 2, 10, 0xff6b6b, 'static', 'grass'));
 
     // Collectibles with varied patterns
     collectibles.push(...this.createCollectibleVerticalStack(18, 5, -3, 10, 2));
@@ -427,11 +441,16 @@ export class Level {
     height: number,
     depth: number,
     color: number,
-    platformType: import('./types').PlatformType = 'static'
+    platformType: import('./types').PlatformType = 'static',
+    surfaceType?: SurfaceType
   ): Platform {
     const geometry = new THREE.BoxGeometry(width, height, depth);
+
+    // If surfaceType is specified, use its color; otherwise use the provided color
+    const finalColor = surfaceType ? this.getColorForSurface(surfaceType) : color;
+
     const material = new THREE.MeshStandardMaterial({
-      color,
+      color: finalColor,
       metalness: 0.2,
       roughness: 0.8,
     });
@@ -454,6 +473,7 @@ export class Level {
       position: new THREE.Vector3(x, y, z),
       size: new THREE.Vector3(width, height, depth),
       type: platformType,
+      surfaceType: surfaceType || 'default',
     };
 
     // Initialize platform-specific properties
@@ -501,9 +521,10 @@ export class Level {
     width: number, height: number, depth: number,
     range: number,
     speed: number = 1,
-    color: number = 0x9370db
+    color: number = 0x9370db,
+    surfaceType?: SurfaceType
   ): Platform {
-    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'elevator');
+    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'elevator', surfaceType);
     platform.moveDirection = new THREE.Vector3(0, 1, 0); // Move vertically
     platform.moveRange = range;
     platform.moveSpeed = speed;
@@ -516,9 +537,10 @@ export class Level {
     direction: THREE.Vector3,
     range: number,
     speed: number = 2,
-    color: number = 0x20b2aa
+    color: number = 0x20b2aa,
+    surfaceType?: SurfaceType
   ): Platform {
-    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'moving');
+    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'moving', surfaceType);
     platform.moveDirection = direction.normalize();
     platform.moveRange = range;
     platform.moveSpeed = speed;
@@ -529,9 +551,10 @@ export class Level {
     x: number, y: number, z: number,
     width: number, height: number, depth: number,
     springForce: number = 20,
-    color: number = 0x00ff00
+    color: number = 0x00ff00,
+    surfaceType?: SurfaceType
   ): Platform {
-    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'spring');
+    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'spring', surfaceType);
     platform.springForce = springForce;
     return platform;
   }
@@ -540,9 +563,10 @@ export class Level {
     x: number, y: number, z: number,
     width: number, height: number, depth: number,
     fallDelay: number = 0.5,
-    color: number = 0xff9900
+    color: number = 0xff9900,
+    surfaceType?: SurfaceType
   ): Platform {
-    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'falling');
+    const platform = this.createPlatform(x, y, z, width, height, depth, color, 'falling', surfaceType);
     platform.fallDelay = fallDelay;
     return platform;
   }
