@@ -8,8 +8,10 @@ export class VirtualGamepad {
   private dpadCenter: { x: number; y: number };
   private dpadRadius: number;
   private jumpButton: { x: number; y: number; radius: number };
+  private cameraButton: { x: number; y: number; radius: number };
   private lastJumpTapTime: number = 0;
   private doubleTapWindow: number = 300; // milliseconds
+  private onCameraToggle?: () => void;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -36,6 +38,13 @@ export class VirtualGamepad {
       x: canvas.width - 120,
       y: canvas.height - 120,
       radius: 60,
+    };
+
+    // Camera toggle button in the top-right corner
+    this.cameraButton = {
+      x: canvas.width - 80,
+      y: 80,
+      radius: 40,
     };
 
     this.setupTouchListeners();
@@ -91,6 +100,18 @@ export class VirtualGamepad {
         }
 
         this.lastJumpTapTime = now;
+      }
+
+      // Check if touch is on camera button
+      const cameraDist = Math.sqrt(
+        Math.pow(x - this.cameraButton.x, 2) + Math.pow(y - this.cameraButton.y, 2)
+      );
+
+      if (cameraDist < this.cameraButton.radius * 1.5) {
+        this.touches.set(touch.identifier, { x, y, zone: 'camera' });
+        if (this.onCameraToggle) {
+          this.onCameraToggle();
+        }
       }
     }
   }
@@ -249,6 +270,22 @@ export class VirtualGamepad {
       this.ctx.fill();
       this.ctx.restore();
     }
+
+    // Draw camera toggle button
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.4;
+    this.ctx.fillStyle = '#9b59b6';
+    this.ctx.beginPath();
+    this.ctx.arc(this.cameraButton.x, this.cameraButton.y, this.cameraButton.radius, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.ctx.globalAlpha = 1;
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = 'bold 24px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText('📷', this.cameraButton.x, this.cameraButton.y);
+    this.ctx.restore();
   }
 
   public getControls(): Controls {
@@ -267,6 +304,16 @@ export class VirtualGamepad {
       radius: 60,
     };
 
+    this.cameraButton = {
+      x: width - 80,
+      y: 80,
+      radius: 40,
+    };
+
     this.draw();
+  }
+
+  public setCameraToggleCallback(callback: () => void): void {
+    this.onCameraToggle = callback;
   }
 }

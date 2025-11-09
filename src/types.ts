@@ -35,6 +35,8 @@ export interface SkinDefinition {
   };
 }
 
+export type CameraMode = 'traditional' | 'over-shoulder';
+
 export interface Controls {
   left: boolean;
   right: boolean;
