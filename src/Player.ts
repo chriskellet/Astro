@@ -78,8 +78,8 @@ export class Player {
     this.traditionalCameraOffset = new THREE.Vector3(0, 8, 12);
 
     // Over-the-shoulder camera: directly behind and elevated
-    // In player's local space: 0 right, 5 up, 7 behind (positive Z is behind when facing -Z)
-    this.overShoulderCameraOffset = new THREE.Vector3(0, 5, 7);
+    // In player's local space: 0 right, 5 up, -7 back (negative Z to position behind player)
+    this.overShoulderCameraOffset = new THREE.Vector3(0, 5, -7);
 
     this.state = {
       position: new THREE.Vector3(0, 7, 0),
@@ -1039,14 +1039,12 @@ export class Player {
       rotatedOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
 
       const targetPosition = this.state.position.clone().add(rotatedOffset);
-      this.camera.position.lerp(targetPosition, 0.1);
+      // Faster lerp to reduce jitter and lag (0.25 instead of 0.1)
+      this.camera.position.lerp(targetPosition, 0.25);
 
-      // Look at a point slightly ahead of the player in their facing direction
-      const lookAheadDistance = 5;
+      // Look at player's head/upper body
       const lookTarget = this.state.position.clone();
-      lookTarget.x += Math.sin(this.mesh.rotation.y) * lookAheadDistance;
-      lookTarget.z += Math.cos(this.mesh.rotation.y) * lookAheadDistance;
-      lookTarget.y += 1.5; // Look at upper body/head level
+      lookTarget.y += 1.2; // Look at head level
       this.camera.lookAt(lookTarget);
     }
   }
