@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PlayerState, Controls, SkinDefinition, SurfaceType } from './types';
+import { PlayerState, Controls, SkinDefinition, SurfaceType, CameraMode } from './types';
 import { Physics } from './Physics';
 import { ParticleSystem } from './ParticleSystem';
 import { getDefaultSkin } from './skins';
@@ -19,7 +19,10 @@ export class Player {
   private radius: number = 0.5;
   private height: number = 1.5;
   private camera: THREE.Camera;
+  private cameraMode: CameraMode = 'traditional';
   private cameraOffset: THREE.Vector3;
+  private traditionalCameraOffset: THREE.Vector3;
+  private overShoulderCameraOffset: THREE.Vector3;
   private currentPlatform: import('./types').Platform | null = null;
   private leftFootFlame!: THREE.Mesh;
   private rightFootFlame!: THREE.Mesh;
@@ -71,7 +74,15 @@ export class Player {
     this.camera = camera;
     this.particles = particles;
     this.skin = skin || getDefaultSkin();
-    this.cameraOffset = new THREE.Vector3(0, 8, 12);
+
+    // Traditional camera: side view, elevated and pulled back
+    this.traditionalCameraOffset = new THREE.Vector3(0, 8, 12);
+
+    // Over-the-shoulder camera: closer, higher, positioned behind and to the side
+    this.overShoulderCameraOffset = new THREE.Vector3(2, 5, 6);
+
+    // Start with traditional camera
+    this.cameraOffset = this.traditionalCameraOffset.clone();
 
     this.state = {
       position: new THREE.Vector3(0, 7, 0),
@@ -466,10 +477,43 @@ export class Player {
     // Apply movement with acceleration
     const moveVector = new THREE.Vector3();
 
-    if (controls.left) moveVector.x -= 1;
-    if (controls.right) moveVector.x += 1;
-    if (controls.forward) moveVector.z -= 1;
-    if (controls.backward) moveVector.z += 1;
+    if (this.cameraMode === 'traditional') {
+      // Traditional mode: world-space controls
+      if (controls.left) moveVector.x -= 1;
+      if (controls.right) moveVector.x += 1;
+      if (controls.forward) moveVector.z -= 1;
+      if (controls.backward) moveVector.z += 1;
+    } else {
+      // Over-the-shoulder mode: camera-relative controls
+      // Get camera's forward direction (projected onto XZ plane)
+      const cameraForward = new THREE.Vector3();
+      this.camera.getWorldDirection(cameraForward);
+      cameraForward.y = 0; // Project onto horizontal plane
+      cameraForward.normalize();
+
+      // Calculate camera's right direction
+      const cameraRight = new THREE.Vector3();
+      cameraRight.crossVectors(cameraForward, new THREE.Vector3(0, 1, 0));
+      cameraRight.normalize();
+
+      // Apply controls relative to camera orientation
+      if (controls.forward) {
+        moveVector.x += cameraForward.x;
+        moveVector.z += cameraForward.z;
+      }
+      if (controls.backward) {
+        moveVector.x -= cameraForward.x;
+        moveVector.z -= cameraForward.z;
+      }
+      if (controls.right) {
+        moveVector.x += cameraRight.x;
+        moveVector.z += cameraRight.z;
+      }
+      if (controls.left) {
+        moveVector.x -= cameraRight.x;
+        moveVector.z -= cameraRight.z;
+      }
+    }
 
     if (moveVector.length() > 0) {
       moveVector.normalize();
@@ -986,9 +1030,37 @@ export class Player {
   }
 
   private updateCamera(): void {
+    // Smoothly interpolate camera offset when switching modes
+    const targetOffset = this.cameraMode === 'traditional'
+      ? this.traditionalCameraOffset
+      : this.overShoulderCameraOffset;
+
+    this.cameraOffset.lerp(targetOffset, 0.15);
+
     const targetPosition = this.state.position.clone().add(this.cameraOffset);
     this.camera.position.lerp(targetPosition, 0.1);
-    this.camera.lookAt(this.state.position);
+
+    if (this.cameraMode === 'traditional') {
+      // Traditional mode: look at player
+      this.camera.lookAt(this.state.position);
+    } else {
+      // Over-the-shoulder mode: look ahead in the direction the player is moving
+      // Look at a point ahead of the player based on their facing direction
+      const lookAheadDistance = 10;
+      const lookTarget = this.state.position.clone();
+      lookTarget.x += Math.sin(this.mesh.rotation.y) * lookAheadDistance;
+      lookTarget.z += Math.cos(this.mesh.rotation.y) * lookAheadDistance;
+      lookTarget.y += 2; // Look slightly above the player
+      this.camera.lookAt(lookTarget);
+    }
+  }
+
+  public toggleCameraMode(): void {
+    this.cameraMode = this.cameraMode === 'traditional' ? 'over-shoulder' : 'traditional';
+  }
+
+  public getCameraMode(): CameraMode {
+    return this.cameraMode;
   }
 
   public addScore(points: number): void {

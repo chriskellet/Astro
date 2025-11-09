@@ -152,6 +152,11 @@ export class Game {
     // Virtual Gamepad
     this.gamepad = new VirtualGamepad(this.controlCanvas);
 
+    // Set up camera toggle callback
+    this.gamepad.setCameraToggleCallback(() => {
+      this.player.toggleCameraMode();
+    });
+
     // Add click handler to skip/speed up intro
     this.canvas.addEventListener('click', () => {
       if (this.cameraIntro.isActive()) {
