@@ -23,6 +23,8 @@ export class VirtualGamepad {
       backward: false,
       jump: false,
       booster: false,
+      analogMagnitude: 0,
+      analogAngle: 0,
     };
     this.touches = new Map();
 
@@ -145,6 +147,8 @@ export class VirtualGamepad {
           this.controls.right = false;
           this.controls.forward = false;
           this.controls.backward = false;
+          this.controls.analogMagnitude = 0;
+          this.controls.analogAngle = 0;
         } else if (touchData.zone === 'jump') {
           this.controls.jump = false;
           this.controls.booster = false;
@@ -160,6 +164,11 @@ export class VirtualGamepad {
     const dy = y - this.dpadCenter.y;
     const angle = Math.atan2(dy, dx);
     const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Calculate analog values
+    // Magnitude is 0-1 based on how far from center (clamped to radius)
+    this.controls.analogMagnitude = Math.min(distance / this.dpadRadius, 1.0);
+    this.controls.analogAngle = angle;
 
     // Reset all directions
     this.controls.left = false;

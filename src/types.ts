@@ -44,6 +44,9 @@ export interface Controls {
   booster: boolean;
   forward: boolean;
   backward: boolean;
+  // Analog stick values (0-1 magnitude, angle in radians)
+  analogMagnitude: number;
+  analogAngle: number;
 }
 
 export type CollectibleType = 'orb' | 'coin' | 'ring' | 'tnt' | 'star';
