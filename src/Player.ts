@@ -622,12 +622,19 @@ export class Player {
       if (thrustMultiplier > 0.1) {
         this.particles.emitFlame(leftFootPos, 2);
         this.particles.emitFlame(rightFootPos, 2);
-        this.particles.emitSmoke(leftFootPos, 1);
-        this.particles.emitSmoke(rightFootPos, 1);
+        // Emit smoke with player velocity for trailing effect (reduced count)
+        if (Math.random() > 0.3) { // Only emit 70% of the time to reduce density
+          this.particles.emitSmoke(leftFootPos, 1, this.state.velocity);
+        }
+        if (Math.random() > 0.3) {
+          this.particles.emitSmoke(rightFootPos, 1, this.state.velocity);
+        }
       } else {
-        // Spluttering - less particles
-        this.particles.emitSmoke(leftFootPos, 1);
-        this.particles.emitSmoke(rightFootPos, 1);
+        // Spluttering - less smoke
+        if (Math.random() > 0.5) { // Only emit 50% of the time when spluttering
+          this.particles.emitSmoke(leftFootPos, 1, this.state.velocity);
+          this.particles.emitSmoke(rightFootPos, 1, this.state.velocity);
+        }
       }
 
       // Show flame visuals with opacity based on thrust
