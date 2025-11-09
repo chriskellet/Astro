@@ -36,6 +36,9 @@ export class Game {
   private ambientLight: THREE.AmbientLight;
   private directionalLight: THREE.DirectionalLight;
   private hemisphereLight: THREE.HemisphereLight;
+  private levelStartTime: number;
+  private enemiesKilled: number;
+  private summaryShown: boolean;
 
   constructor(config: GameConfig, skin?: SkinDefinition) {
     this.canvas = config.canvas;
@@ -43,6 +46,9 @@ export class Game {
     this.running = false;
     this.currentLevel = 1;
     this.selectedSkin = skin;
+    this.levelStartTime = 0;
+    this.enemiesKilled = 0;
+    this.summaryShown = false;
 
     // Get UI elements
     this.scoreElement = document.getElementById('score');
@@ -262,6 +268,9 @@ export class Game {
   public start(): void {
     this.running = true;
     this.lastTime = performance.now();
+    this.levelStartTime = performance.now();
+    this.enemiesKilled = 0;
+    this.summaryShown = false;
     this.gameLoop();
   }
 
@@ -398,6 +407,9 @@ export class Game {
         this.player.addScore(50);
         this.updateUI();
 
+        // Track enemy kill
+        this.enemiesKilled++;
+
         // Hide enemy mesh
         enemy.mesh.visible = false;
         return; // Skip other collision checks for this enemy
@@ -433,6 +445,9 @@ export class Game {
           // Award score
           this.player.addScore(50);
           this.updateUI();
+
+          // Track enemy kill
+          this.enemiesKilled++;
 
           // Hide enemy mesh
           enemy.mesh.visible = false;
@@ -514,45 +529,117 @@ export class Game {
       () => {
         // Intro complete - camera is now at player position
         // Player update will take over camera control
+        // Reset level start time when intro completes
+        this.levelStartTime = performance.now();
       }
     );
   }
 
-  private levelComplete(): void {
-    // Use star wipe transition - first wipe IN to black
-    this.transition.start('starwipe', 'in', 1000, () => {
-      // Advance to next level
-      this.currentLevel++;
+  private showLevelSummary(callback: () => void): void {
+    // Calculate stats
+    const totalCoins = this.level.data.collectibles.length;
+    const collectedCoins = this.level.data.collectibles.filter(c => c.collected).length;
+    const coinPercentage = totalCoins > 0 ? Math.round((collectedCoins / totalCoins) * 100) : 0;
+    const isPerfect = coinPercentage === 100;
 
-      // If we've completed all levels, loop back to level 1
-      if (this.currentLevel > this.maxLevels) {
-        this.currentLevel = 1;
-      }
+    const levelTime = (performance.now() - this.levelStartTime) / 1000;
+    const minutes = Math.floor(levelTime / 60);
+    const seconds = Math.floor(levelTime % 60);
+    const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-      // Clean up old level
-      this.level.cleanup();
+    // Get UI elements
+    const summaryOverlay = document.getElementById('level-summary');
+    const coinsElement = document.getElementById('coins-stat');
+    const enemiesElement = document.getElementById('enemies-stat');
+    const timeElement = document.getElementById('time-stat');
+    const bonusContainer = document.getElementById('bonus-container');
 
-      // Create new level
-      const collectibleType = this.selectedSkin ? getCollectibleTypeForSkin(this.selectedSkin.id) : 'orb';
-      this.level = new Level(this.scene, this.currentLevel, collectibleType);
+    if (!summaryOverlay || !coinsElement || !enemiesElement || !timeElement || !bonusContainer) {
+      console.error('Summary UI elements not found');
+      callback();
+      return;
+    }
 
-      // Update background theme for new level
-      this.backgroundTheme.setTheme(this.currentLevel);
-      this.updateLightsFromTheme();
+    // Update stats
+    coinsElement.textContent = `${collectedCoins} / ${totalCoins} (${coinPercentage}%)`;
+    if (isPerfect) {
+      coinsElement.classList.add('perfect');
+    } else {
+      coinsElement.classList.remove('perfect');
+    }
 
-      // Reset player position
-      this.player.state.position.copy(this.level.data.startPosition);
-      this.player.state.velocity.set(0, 0, 0);
+    enemiesElement.textContent = `${this.enemiesKilled}`;
+    timeElement.textContent = timeString;
 
-      // Update UI
+    // Show bonus message if perfect
+    if (isPerfect) {
+      bonusContainer.innerHTML = '<div class="bonus-message">PERFECT! Bonus +500 points!</div>';
+      this.player.addScore(500);
       this.updateUI();
+    } else {
+      bonusContainer.innerHTML = '';
+    }
 
-      // Wipe OUT to reveal new level with camera intro
-      setTimeout(() => {
-        this.transition.start('starwipe', 'out', 1000, () => {
-          this.startLevelIntro();
-        });
-      }, 100);
+    // Show the overlay
+    summaryOverlay.classList.add('visible');
+
+    // Handle click/tap to continue
+    const continueHandler = () => {
+      summaryOverlay.classList.remove('visible');
+      summaryOverlay.removeEventListener('click', continueHandler);
+      callback();
+    };
+
+    summaryOverlay.addEventListener('click', continueHandler);
+  }
+
+  private levelComplete(): void {
+    // Prevent showing summary multiple times
+    if (this.summaryShown) return;
+    this.summaryShown = true;
+
+    // Show level summary screen
+    this.showLevelSummary(() => {
+      // After user clicks to continue, do the transition
+      // Use star wipe transition - first wipe IN to black
+      this.transition.start('starwipe', 'in', 1000, () => {
+        // Advance to next level
+        this.currentLevel++;
+
+        // If we've completed all levels, loop back to level 1
+        if (this.currentLevel > this.maxLevels) {
+          this.currentLevel = 1;
+        }
+
+        // Clean up old level
+        this.level.cleanup();
+
+        // Create new level
+        const collectibleType = this.selectedSkin ? getCollectibleTypeForSkin(this.selectedSkin.id) : 'orb';
+        this.level = new Level(this.scene, this.currentLevel, collectibleType);
+
+        // Update background theme for new level
+        this.backgroundTheme.setTheme(this.currentLevel);
+        this.updateLightsFromTheme();
+
+        // Reset player position
+        this.player.state.position.copy(this.level.data.startPosition);
+        this.player.state.velocity.set(0, 0, 0);
+
+        // Update UI
+        this.updateUI();
+
+        // Reset level stats
+        this.enemiesKilled = 0;
+        this.summaryShown = false;
+
+        // Wipe OUT to reveal new level with camera intro
+        setTimeout(() => {
+          this.transition.start('starwipe', 'out', 1000, () => {
+            this.startLevelIntro();
+          });
+        }, 100);
+      });
     });
   }
 
