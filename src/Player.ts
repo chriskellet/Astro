@@ -1073,4 +1073,16 @@ export class Player {
   public getRadius(): number {
     return this.radius;
   }
+
+  public getDebugInfo(): { rotationSpeed: number; forwardSpeed: number; lateralSpeed: number } {
+    // Calculate actual rotation speed applied this frame
+    const rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
+
+    // Forward speed is Z velocity, lateral is X velocity
+    return {
+      rotationSpeed: rotationSpeed,
+      forwardSpeed: this.state.velocity.z,
+      lateralSpeed: this.state.velocity.x,
+    };
+  }
 }

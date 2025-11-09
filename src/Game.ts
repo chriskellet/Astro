@@ -317,6 +317,10 @@ export class Game {
     // Get player position (used throughout update)
     const playerPos = this.player.getPosition();
 
+    // Update debug info in gamepad
+    const debugInfo = this.player.getDebugInfo();
+    this.gamepad.updateDebugInfo(debugInfo.rotationSpeed, debugInfo.forwardSpeed, debugInfo.lateralSpeed);
+
     // Update level (enemies need player position and particles)
     this.level.update(deltaTime, playerPos, this.particles);
 
