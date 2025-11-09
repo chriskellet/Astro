@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PlayerState, Controls, SkinDefinition } from './types';
+import { PlayerState, Controls, SkinDefinition, SurfaceType } from './types';
 import { Physics } from './Physics';
 import { ParticleSystem } from './ParticleSystem';
 import { getDefaultSkin } from './skins';
@@ -12,7 +12,8 @@ export class Player {
   private skin: SkinDefinition;
   private moveSpeed: number = 8;
   private acceleration: number = 25; // Acceleration rate for smooth movement
-  private friction: number = 15; // Deceleration when no input
+  private baseFriction: number = 8; // Base deceleration when no input (lowered from 15)
+  private currentSurfaceType: SurfaceType = 'default';
   private jumpForce: number = 12;
   private radius: number = 0.5;
   private height: number = 1.5;
@@ -76,6 +77,20 @@ export class Player {
 
     this.mesh = this.createMesh();
     this.mesh.position.copy(this.state.position);
+  }
+
+  private getFrictionForSurface(surfaceType: SurfaceType): number {
+    switch (surfaceType) {
+      case 'ice':
+        return 2; // Very slippy - slow deceleration
+      case 'grass':
+        return 12; // Good grip - fast deceleration
+      case 'stone':
+        return 10; // Good grip - moderate deceleration
+      case 'default':
+      default:
+        return this.baseFriction; // Default friction
+    }
   }
 
   private createMesh(): THREE.Group {
@@ -460,8 +475,9 @@ export class Player {
       // Set target rotation to face movement direction
       this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
     } else {
-      // Apply friction to decelerate smoothly
-      const frictionStep = this.friction * deltaTime;
+      // Apply friction to decelerate smoothly based on surface type
+      const friction = this.getFrictionForSurface(this.currentSurfaceType);
+      const frictionStep = friction * deltaTime;
 
       if (Math.abs(this.state.velocity.x) > frictionStep) {
         this.state.velocity.x -= Math.sign(this.state.velocity.x) * frictionStep;
@@ -499,8 +515,9 @@ export class Player {
 
     this.state.isJumping = !collision.grounded;
 
-    // Update current platform
+    // Update current platform and surface type
     this.currentPlatform = collision.platform;
+    this.currentSurfaceType = collision.surfaceType || 'default';
 
     // Reset double jump and rocket jump when grounded
     if (collision.grounded) {

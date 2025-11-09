@@ -56,11 +56,14 @@ export interface Collectible {
 
 export type PlatformType = 'static' | 'elevator' | 'moving' | 'spring' | 'falling';
 
+export type SurfaceType = 'default' | 'ice' | 'grass' | 'stone';
+
 export interface Platform {
   mesh: THREE.Mesh;
   position: THREE.Vector3;
   size: THREE.Vector3;
   type?: PlatformType;
+  surfaceType?: SurfaceType;
   // Moving/Elevator platform properties
   moveDirection?: THREE.Vector3;
   moveSpeed?: number;
