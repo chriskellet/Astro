@@ -524,30 +524,56 @@ export class Player {
     if (moveVector.length() > 0) {
       moveVector.normalize();
 
-      // Calculate target velocity
-      // In over-the-shoulder mode, apply analog magnitude for variable speed
-      const speedMultiplier = this.cameraMode === 'over-shoulder'
-        ? controls.analogMagnitude
-        : 1.0;
-      const targetVelocityX = moveVector.x * this.moveSpeed * speedMultiplier;
-      const targetVelocityZ = moveVector.z * this.moveSpeed * speedMultiplier;
-
-      if (this.cameraMode === 'over-shoulder') {
-        // Over-shoulder mode: Direct velocity response (analog stick already provides smoothing)
-        // Use high lerp factor for immediate response
-        this.state.velocity.x = THREE.MathUtils.lerp(this.state.velocity.x, targetVelocityX, 0.3);
-        this.state.velocity.z = THREE.MathUtils.lerp(this.state.velocity.z, targetVelocityZ, 0.3);
-      } else {
-        // Traditional mode: Smoothly accelerate towards target velocity
-        const accelerationStep = this.acceleration * deltaTime;
-        this.state.velocity.x += Math.sign(targetVelocityX - this.state.velocity.x) *
-          Math.min(Math.abs(targetVelocityX - this.state.velocity.x), accelerationStep);
-        this.state.velocity.z += Math.sign(targetVelocityZ - this.state.velocity.z) *
-          Math.min(Math.abs(targetVelocityZ - this.state.velocity.z), accelerationStep);
-      }
-
-      // Set target rotation to face movement direction
+      // Always update target rotation based on stick direction
       this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
+
+      // Only apply movement if magnitude is above threshold
+      // This allows rotation without movement for fine adjustments
+      const movementThreshold = this.cameraMode === 'over-shoulder' ? 0.15 : 0.0;
+
+      if (controls.analogMagnitude > movementThreshold || this.cameraMode === 'traditional') {
+        // Calculate target velocity
+        // In over-the-shoulder mode, apply analog magnitude for variable speed
+        const speedMultiplier = this.cameraMode === 'over-shoulder'
+          ? controls.analogMagnitude
+          : 1.0;
+        const targetVelocityX = moveVector.x * this.moveSpeed * speedMultiplier;
+        const targetVelocityZ = moveVector.z * this.moveSpeed * speedMultiplier;
+
+        if (this.cameraMode === 'over-shoulder') {
+          // Over-shoulder mode: Direct velocity response (analog stick already provides smoothing)
+          // Use high lerp factor for immediate response
+          this.state.velocity.x = THREE.MathUtils.lerp(this.state.velocity.x, targetVelocityX, 0.3);
+          this.state.velocity.z = THREE.MathUtils.lerp(this.state.velocity.z, targetVelocityZ, 0.3);
+        } else {
+          // Traditional mode: Smoothly accelerate towards target velocity
+          const accelerationStep = this.acceleration * deltaTime;
+          this.state.velocity.x += Math.sign(targetVelocityX - this.state.velocity.x) *
+            Math.min(Math.abs(targetVelocityX - this.state.velocity.x), accelerationStep);
+          this.state.velocity.z += Math.sign(targetVelocityZ - this.state.velocity.z) *
+            Math.min(Math.abs(targetVelocityZ - this.state.velocity.z), accelerationStep);
+        }
+      } else {
+        // Below movement threshold - apply friction (allows rotation without movement)
+        const friction = this.getFrictionForSurface(this.currentSurfaceType);
+        const frictionStep = friction * deltaTime;
+
+        if (Math.abs(this.state.velocity.x) < this.minVelocityThreshold) {
+          this.state.velocity.x = 0;
+        } else if (Math.abs(this.state.velocity.x) > frictionStep) {
+          this.state.velocity.x -= Math.sign(this.state.velocity.x) * frictionStep;
+        } else {
+          this.state.velocity.x = 0;
+        }
+
+        if (Math.abs(this.state.velocity.z) < this.minVelocityThreshold) {
+          this.state.velocity.z = 0;
+        } else if (Math.abs(this.state.velocity.z) > frictionStep) {
+          this.state.velocity.z -= Math.sign(this.state.velocity.z) * frictionStep;
+        } else {
+          this.state.velocity.z = 0;
+        }
+      }
     } else {
       // Apply non-linear friction to decelerate based on surface type
       const friction = this.getFrictionForSurface(this.currentSurfaceType);
