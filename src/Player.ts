@@ -523,12 +523,19 @@ export class Player {
       const targetVelocityX = moveVector.x * this.moveSpeed * speedMultiplier;
       const targetVelocityZ = moveVector.z * this.moveSpeed * speedMultiplier;
 
-      // Smoothly accelerate towards target velocity
-      const accelerationStep = this.acceleration * deltaTime;
-      this.state.velocity.x += Math.sign(targetVelocityX - this.state.velocity.x) *
-        Math.min(Math.abs(targetVelocityX - this.state.velocity.x), accelerationStep);
-      this.state.velocity.z += Math.sign(targetVelocityZ - this.state.velocity.z) *
-        Math.min(Math.abs(targetVelocityZ - this.state.velocity.z), accelerationStep);
+      if (this.cameraMode === 'over-shoulder') {
+        // Over-shoulder mode: Direct velocity response (analog stick already provides smoothing)
+        // Use high lerp factor for immediate response
+        this.state.velocity.x = THREE.MathUtils.lerp(this.state.velocity.x, targetVelocityX, 0.3);
+        this.state.velocity.z = THREE.MathUtils.lerp(this.state.velocity.z, targetVelocityZ, 0.3);
+      } else {
+        // Traditional mode: Smoothly accelerate towards target velocity
+        const accelerationStep = this.acceleration * deltaTime;
+        this.state.velocity.x += Math.sign(targetVelocityX - this.state.velocity.x) *
+          Math.min(Math.abs(targetVelocityX - this.state.velocity.x), accelerationStep);
+        this.state.velocity.z += Math.sign(targetVelocityZ - this.state.velocity.z) *
+          Math.min(Math.abs(targetVelocityZ - this.state.velocity.z), accelerationStep);
+      }
 
       // Set target rotation to face movement direction
       this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
