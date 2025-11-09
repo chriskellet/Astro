@@ -10,8 +10,16 @@ export class VirtualGamepad {
   private jumpButton: { x: number; y: number; radius: number };
   private cameraButton: { x: number; y: number; radius: number };
   private lastJumpTapTime: number = 0;
+  private lastCameraTapTime: number = 0;
   private doubleTapWindow: number = 300; // milliseconds
   private onCameraToggle?: () => void;
+  private dpadTouchPosition: { x: number; y: number } | null = null;
+  private debugMode: boolean = false;
+  private debugInfo: {
+    rotationSpeed: number;
+    forwardSpeed: number;
+    lateralSpeed: number;
+  } = { rotationSpeed: 0, forwardSpeed: 0, lateralSpeed: 0 };
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -111,9 +119,21 @@ export class VirtualGamepad {
 
       if (cameraDist < this.cameraButton.radius * 1.5) {
         this.touches.set(touch.identifier, { x, y, zone: 'camera' });
-        if (this.onCameraToggle) {
-          this.onCameraToggle();
+
+        const now = Date.now();
+        const timeSinceLastTap = now - this.lastCameraTapTime;
+
+        // Check for double-tap to toggle debug mode
+        if (timeSinceLastTap < this.doubleTapWindow && timeSinceLastTap > 0) {
+          this.debugMode = !this.debugMode;
+        } else {
+          // Single tap - toggle camera mode
+          if (this.onCameraToggle) {
+            this.onCameraToggle();
+          }
         }
+
+        this.lastCameraTapTime = now;
       }
     }
   }
@@ -129,6 +149,8 @@ export class VirtualGamepad {
         const rect = this.canvas.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
+        touchData.x = x;
+        touchData.y = y;
         this.updateDpad(x, y);
       }
     }
@@ -149,6 +171,7 @@ export class VirtualGamepad {
           this.controls.backward = false;
           this.controls.analogMagnitude = 0;
           this.controls.analogAngle = 0;
+          this.dpadTouchPosition = null;
         } else if (touchData.zone === 'jump') {
           this.controls.jump = false;
           this.controls.booster = false;
@@ -191,6 +214,9 @@ export class VirtualGamepad {
 
     this.controls.analogMagnitude = magnitude;
     this.controls.analogAngle = angle;
+
+    // Store touch position for visual feedback
+    this.dpadTouchPosition = { x, y };
 
     // Reset all directions
     this.controls.left = false;
@@ -317,6 +343,43 @@ export class VirtualGamepad {
     this.ctx.textBaseline = 'middle';
     this.ctx.fillText('📷', this.cameraButton.x, this.cameraButton.y);
     this.ctx.restore();
+
+    // Draw D-pad touch indicator
+    if (this.dpadTouchPosition) {
+      this.ctx.save();
+      this.ctx.fillStyle = '#ff0000';
+      this.ctx.globalAlpha = 0.8;
+      this.ctx.beginPath();
+      this.ctx.arc(this.dpadTouchPosition.x, this.dpadTouchPosition.y, 10, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+
+    // Draw debug info
+    if (this.debugMode) {
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      this.ctx.fillRect(10, 10, 280, 140);
+
+      this.ctx.fillStyle = '#00ff00';
+      this.ctx.font = '12px monospace';
+      this.ctx.textAlign = 'left';
+      this.ctx.textBaseline = 'top';
+
+      const dx = this.dpadTouchPosition ? (this.dpadTouchPosition.x - this.dpadCenter.x).toFixed(1) : '0.0';
+      const dy = this.dpadTouchPosition ? (this.dpadTouchPosition.y - this.dpadCenter.y).toFixed(1) : '0.0';
+      const mag = this.controls.analogMagnitude.toFixed(3);
+      const angle = this.controls.analogAngle.toFixed(2);
+
+      this.ctx.fillText(`Stick X: ${dx}`, 20, 20);
+      this.ctx.fillText(`Stick Y: ${dy}`, 20, 40);
+      this.ctx.fillText(`Magnitude: ${mag}`, 20, 60);
+      this.ctx.fillText(`Angle: ${angle} rad`, 20, 80);
+      this.ctx.fillText(`Rot Speed: ${this.debugInfo.rotationSpeed.toFixed(2)} rad/s`, 20, 100);
+      this.ctx.fillText(`Forward: ${this.debugInfo.forwardSpeed.toFixed(2)}`, 20, 120);
+
+      this.ctx.restore();
+    }
   }
 
   public getControls(): Controls {
@@ -346,5 +409,11 @@ export class VirtualGamepad {
 
   public setCameraToggleCallback(callback: () => void): void {
     this.onCameraToggle = callback;
+  }
+
+  public updateDebugInfo(rotationSpeed: number, forwardSpeed: number, lateralSpeed: number): void {
+    this.debugInfo.rotationSpeed = rotationSpeed;
+    this.debugInfo.forwardSpeed = forwardSpeed;
+    this.debugInfo.lateralSpeed = lateralSpeed;
   }
 }
