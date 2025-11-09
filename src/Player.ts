@@ -12,7 +12,8 @@ export class Player {
   private skin: SkinDefinition;
   private moveSpeed: number = 8;
   private acceleration: number = 25; // Acceleration rate for smooth movement
-  private baseFriction: number = 8; // Base deceleration when no input (lowered from 15)
+  private baseFriction: number = 12; // Base deceleration when no input
+  private minVelocityThreshold: number = 0.5; // Snap to zero below this velocity
   private currentSurfaceType: SurfaceType = 'default';
   private jumpForce: number = 12;
   private radius: number = 0.5;
@@ -82,11 +83,11 @@ export class Player {
   private getFrictionForSurface(surfaceType: SurfaceType): number {
     switch (surfaceType) {
       case 'ice':
-        return 2; // Very slippy - slow deceleration
+        return 3; // Very slippy - slow deceleration
       case 'grass':
-        return 12; // Good grip - fast deceleration
+        return 18; // Good grip - fast deceleration
       case 'stone':
-        return 10; // Good grip - moderate deceleration
+        return 15; // Good grip - moderate deceleration
       case 'default':
       default:
         return this.baseFriction; // Default friction
@@ -475,17 +476,25 @@ export class Player {
       // Set target rotation to face movement direction
       this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
     } else {
-      // Apply friction to decelerate smoothly based on surface type
+      // Apply non-linear friction to decelerate based on surface type
       const friction = this.getFrictionForSurface(this.currentSurfaceType);
       const frictionStep = friction * deltaTime;
 
-      if (Math.abs(this.state.velocity.x) > frictionStep) {
+      // X-axis friction with velocity threshold for snappy stopping
+      if (Math.abs(this.state.velocity.x) < this.minVelocityThreshold) {
+        // Below threshold - snap to zero for responsive stopping
+        this.state.velocity.x = 0;
+      } else if (Math.abs(this.state.velocity.x) > frictionStep) {
         this.state.velocity.x -= Math.sign(this.state.velocity.x) * frictionStep;
       } else {
         this.state.velocity.x = 0;
       }
 
-      if (Math.abs(this.state.velocity.z) > frictionStep) {
+      // Z-axis friction with velocity threshold for snappy stopping
+      if (Math.abs(this.state.velocity.z) < this.minVelocityThreshold) {
+        // Below threshold - snap to zero for responsive stopping
+        this.state.velocity.z = 0;
+      } else if (Math.abs(this.state.velocity.z) > frictionStep) {
         this.state.velocity.z -= Math.sign(this.state.velocity.z) * frictionStep;
       } else {
         this.state.velocity.z = 0;
