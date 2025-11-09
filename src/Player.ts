@@ -20,7 +20,6 @@ export class Player {
   private height: number = 1.5;
   private camera: THREE.Camera;
   private cameraMode: CameraMode = 'traditional';
-  private cameraOffset: THREE.Vector3;
   private traditionalCameraOffset: THREE.Vector3;
   private overShoulderCameraOffset: THREE.Vector3;
   private currentPlatform: import('./types').Platform | null = null;
@@ -80,9 +79,6 @@ export class Player {
 
     // Over-the-shoulder camera: closer, higher, positioned behind and to the side
     this.overShoulderCameraOffset = new THREE.Vector3(2, 5, 6);
-
-    // Start with traditional camera
-    this.cameraOffset = this.traditionalCameraOffset.clone();
 
     this.state = {
       position: new THREE.Vector3(0, 7, 0),
@@ -1030,27 +1026,26 @@ export class Player {
   }
 
   private updateCamera(): void {
-    // Smoothly interpolate camera offset when switching modes
-    const targetOffset = this.cameraMode === 'traditional'
-      ? this.traditionalCameraOffset
-      : this.overShoulderCameraOffset;
-
-    this.cameraOffset.lerp(targetOffset, 0.15);
-
-    const targetPosition = this.state.position.clone().add(this.cameraOffset);
-    this.camera.position.lerp(targetPosition, 0.1);
-
     if (this.cameraMode === 'traditional') {
-      // Traditional mode: look at player
+      // Traditional mode: fixed world-space offset, look at player
+      const targetPosition = this.state.position.clone().add(this.traditionalCameraOffset);
+      this.camera.position.lerp(targetPosition, 0.1);
       this.camera.lookAt(this.state.position);
     } else {
-      // Over-the-shoulder mode: look ahead in the direction the player is moving
-      // Look at a point ahead of the player based on their facing direction
-      const lookAheadDistance = 10;
+      // Over-the-shoulder mode: rotate offset with player to stay behind them
+      // Rotate the camera offset based on player's current rotation
+      const rotatedOffset = this.overShoulderCameraOffset.clone();
+      rotatedOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
+
+      const targetPosition = this.state.position.clone().add(rotatedOffset);
+      this.camera.position.lerp(targetPosition, 0.1);
+
+      // Look at a point slightly ahead of the player in their facing direction
+      const lookAheadDistance = 5;
       const lookTarget = this.state.position.clone();
       lookTarget.x += Math.sin(this.mesh.rotation.y) * lookAheadDistance;
       lookTarget.z += Math.cos(this.mesh.rotation.y) * lookAheadDistance;
-      lookTarget.y += 2; // Look slightly above the player
+      lookTarget.y += 1.5; // Look at upper body/head level
       this.camera.lookAt(lookTarget);
     }
   }
