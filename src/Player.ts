@@ -303,6 +303,170 @@ export class Player {
       this.bodyParts.head.add(badge);
     }
 
+    // Add Darth Vader helmet
+    if (this.skin.id === 'vader') {
+      // Helmet dome (glossy black)
+      const helmetDomeGeometry = new THREE.SphereGeometry(0.32, 32, 32, 0, Math.PI * 2, 0, Math.PI / 1.8);
+      const helmetMaterial = new THREE.MeshStandardMaterial({
+        color: 0x0A0A0A,
+        metalness: 0.9,
+        roughness: 0.1,
+      });
+      const helmetDome = new THREE.Mesh(helmetDomeGeometry, helmetMaterial);
+      helmetDome.position.set(0, 0.35, 0);
+      helmetDome.castShadow = true;
+      this.bodyParts.head.add(helmetDome);
+
+      // Face mask (dark gray front plate)
+      const faceMaskGeometry = new THREE.BoxGeometry(0.28, 0.32, 0.12);
+      const faceMaskMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1C1C1C,
+        metalness: 0.8,
+        roughness: 0.3,
+      });
+      const faceMask = new THREE.Mesh(faceMaskGeometry, faceMaskMaterial);
+      faceMask.position.set(0, 0.15, 0.3);
+      faceMask.castShadow = true;
+      this.bodyParts.head.add(faceMask);
+
+      // Breathing apparatus (triangular nose piece)
+      const breathingGeometry = new THREE.ConeGeometry(0.08, 0.15, 3);
+      const breathingMaterial = new THREE.MeshStandardMaterial({
+        color: 0x2C2C2C,
+        metalness: 0.7,
+        roughness: 0.4,
+      });
+      const breathing = new THREE.Mesh(breathingGeometry, breathingMaterial);
+      breathing.position.set(0, 0.1, 0.36);
+      breathing.rotation.x = Math.PI / 2;
+      breathing.castShadow = true;
+      this.bodyParts.head.add(breathing);
+
+      // Red eyes (glowing)
+      const eyeGeometry = new THREE.CircleGeometry(0.04, 12);
+      const eyeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xFF0000,
+        emissive: 0xFF0000,
+        emissiveIntensity: 0.8,
+      });
+      const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+      leftEye.position.set(-0.08, 0.2, 0.35);
+      this.bodyParts.head.add(leftEye);
+      const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+      rightEye.position.set(0.08, 0.2, 0.35);
+      this.bodyParts.head.add(rightEye);
+    }
+
+    // Add Stormtrooper helmet
+    if (this.skin.id === 'stormtrooper') {
+      // Helmet dome (white)
+      const helmetDomeGeometry = new THREE.SphereGeometry(0.32, 32, 32, 0, Math.PI * 2, 0, Math.PI / 1.8);
+      const helmetMaterial = new THREE.MeshStandardMaterial({
+        color: 0xFFFFFF,
+        metalness: 0.3,
+        roughness: 0.4,
+      });
+      const helmetDome = new THREE.Mesh(helmetDomeGeometry, helmetMaterial);
+      helmetDome.position.set(0, 0.35, 0);
+      helmetDome.castShadow = true;
+      this.bodyParts.head.add(helmetDome);
+
+      // Face plate (white)
+      const facePlateGeometry = new THREE.BoxGeometry(0.28, 0.3, 0.1);
+      const facePlate = new THREE.Mesh(facePlateGeometry, helmetMaterial);
+      facePlate.position.set(0, 0.15, 0.3);
+      facePlate.castShadow = true;
+      this.bodyParts.head.add(facePlate);
+
+      // Black visor (eyes area)
+      const visorGeometry = new THREE.BoxGeometry(0.24, 0.08, 0.02);
+      const visorMaterial = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        metalness: 0.8,
+        roughness: 0.2,
+      });
+      const visor = new THREE.Mesh(visorGeometry, visorMaterial);
+      visor.position.set(0, 0.2, 0.35);
+      visor.castShadow = true;
+      this.bodyParts.head.add(visor);
+
+      // Breathing filters (small black boxes on sides)
+      const filterGeometry = new THREE.BoxGeometry(0.06, 0.1, 0.08);
+      const filterMaterial = new THREE.MeshStandardMaterial({
+        color: 0x303030,
+        metalness: 0.5,
+        roughness: 0.6,
+      });
+      const leftFilter = new THREE.Mesh(filterGeometry, filterMaterial);
+      leftFilter.position.set(-0.18, 0.1, 0.32);
+      leftFilter.castShadow = true;
+      this.bodyParts.head.add(leftFilter);
+      const rightFilter = new THREE.Mesh(filterGeometry, filterMaterial);
+      rightFilter.position.set(0.18, 0.1, 0.32);
+      rightFilter.castShadow = true;
+      this.bodyParts.head.add(rightFilter);
+    }
+
+    // Add Boba Fett helmet
+    if (this.skin.id === 'bobafett') {
+      // Helmet dome (green/tan)
+      const helmetDomeGeometry = new THREE.SphereGeometry(0.32, 32, 32, 0, Math.PI * 2, 0, Math.PI / 1.8);
+      const helmetMaterial = new THREE.MeshStandardMaterial({
+        color: 0x4A7C59,
+        metalness: 0.6,
+        roughness: 0.4,
+      });
+      const helmetDome = new THREE.Mesh(helmetDomeGeometry, helmetMaterial);
+      helmetDome.position.set(0, 0.35, 0);
+      helmetDome.castShadow = true;
+      this.bodyParts.head.add(helmetDome);
+
+      // Face plate (tan/brown)
+      const facePlateGeometry = new THREE.BoxGeometry(0.26, 0.28, 0.1);
+      const facePlateMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8B7355,
+        metalness: 0.5,
+        roughness: 0.5,
+      });
+      const facePlate = new THREE.Mesh(facePlateGeometry, facePlateMaterial);
+      facePlate.position.set(0, 0.15, 0.3);
+      facePlate.castShadow = true;
+      this.bodyParts.head.add(facePlate);
+
+      // T-shaped visor (black/red tint)
+      const visorVerticalGeometry = new THREE.BoxGeometry(0.04, 0.18, 0.02);
+      const visorMaterial = new THREE.MeshStandardMaterial({
+        color: 0x2A0000,
+        metalness: 0.9,
+        roughness: 0.1,
+        emissive: 0xFF4500,
+        emissiveIntensity: 0.3,
+      });
+      const visorVertical = new THREE.Mesh(visorVerticalGeometry, visorMaterial);
+      visorVertical.position.set(0, 0.18, 0.35);
+      visorVertical.castShadow = true;
+      this.bodyParts.head.add(visorVertical);
+
+      const visorHorizontalGeometry = new THREE.BoxGeometry(0.18, 0.04, 0.02);
+      const visorHorizontal = new THREE.Mesh(visorHorizontalGeometry, visorMaterial);
+      visorHorizontal.position.set(0, 0.22, 0.35);
+      visorHorizontal.castShadow = true;
+      this.bodyParts.head.add(visorHorizontal);
+
+      // Rangefinder antenna (small cylindrical antenna on side)
+      const rangefinderGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.15, 8);
+      const rangefinderMaterial = new THREE.MeshStandardMaterial({
+        color: 0xD4AF37,
+        metalness: 1.0,
+        roughness: 0.2,
+      });
+      const rangefinder = new THREE.Mesh(rangefinderGeometry, rangefinderMaterial);
+      rangefinder.position.set(0.25, 0.25, 0.1);
+      rangefinder.rotation.z = Math.PI / 2;
+      rangefinder.castShadow = true;
+      this.bodyParts.head.add(rangefinder);
+    }
+
     this.bodyParts.head.position.y = 0.65;
     this.bodyParts.torso.add(this.bodyParts.head);
 

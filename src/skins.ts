@@ -173,6 +173,78 @@ export const AVAILABLE_SKINS: SkinDefinition[] = [
       eyeEmissive: 0xFFD700, // Gold glow
     },
   },
+  {
+    id: 'luke',
+    name: 'Luke Skywalker',
+    colors: {
+      base: 0xF5DEB3,        // Beige/wheat (Jedi robes)
+      accent: 0x8B7355,      // Brown (belt/boots)
+      secondary: 0xFFFFFF,   // White (tunic underneath)
+      tertiary: 0xD2B48C,    // Tan (details)
+      eye: 0x4169E1,         // Blue eyes
+      eyeEmissive: 0x4169E1, // Blue glow
+    },
+  },
+  {
+    id: 'vader',
+    name: 'Darth Vader',
+    colors: {
+      base: 0x0A0A0A,        // Black (armor)
+      accent: 0x1C1C1C,      // Dark gray (panels)
+      secondary: 0x2C2C2C,   // Lighter gray (controls)
+      tertiary: 0x4A0000,    // Dark red (accents)
+      eye: 0xFF0000,         // Red (Sith eyes)
+      eyeEmissive: 0xFF0000, // Red glow
+    },
+  },
+  {
+    id: 'yoda',
+    name: 'Yoda',
+    colors: {
+      base: 0x7CB342,        // Green (skin)
+      accent: 0x9CCC65,      // Light green (skin highlights)
+      secondary: 0xD7CCC8,   // Beige/gray (robes)
+      tertiary: 0x8D6E63,    // Brown (cloak)
+      eye: 0xFFEB3B,         // Yellow/amber eyes
+      eyeEmissive: 0xFFEB3B, // Yellow glow
+    },
+  },
+  {
+    id: 'leia',
+    name: 'Princess Leia',
+    colors: {
+      base: 0xFFFFFF,        // White (dress/robes)
+      accent: 0xF5F5F5,      // Off-white (details)
+      secondary: 0x8B7355,   // Brown (hair/belt)
+      tertiary: 0xC0C0C0,    // Silver (accessories)
+      eye: 0x8B4513,         // Brown eyes
+      eyeEmissive: 0x8B4513, // Brown glow
+    },
+  },
+  {
+    id: 'stormtrooper',
+    name: 'Stormtrooper',
+    colors: {
+      base: 0xFFFFFF,        // White (armor)
+      accent: 0x000000,      // Black (bodysuit/details)
+      secondary: 0xE0E0E0,   // Light gray (armor panels)
+      tertiary: 0x303030,    // Dark gray (joints)
+      eye: 0x00FF00,         // Green (visor glow)
+      eyeEmissive: 0x00FF00, // Green glow
+    },
+  },
+  {
+    id: 'bobafett',
+    name: 'Boba Fett',
+    colors: {
+      base: 0x4A7C59,        // Green (armor)
+      accent: 0xD4AF37,      // Gold/brass (details)
+      secondary: 0x8B4513,   // Brown (bodysuit)
+      tertiary: 0xC41E3A,    // Red (gauntlets/details)
+      eye: 0xFF4500,         // Red/orange (visor)
+      eyeEmissive: 0xFF4500, // Red/orange glow
+    },
+  },
 ];
 
 /**
@@ -195,6 +267,8 @@ export function getDefaultSkin(): SkinDefinition {
  * Toad, Yoshi, Bowser collect stars
  * Sonic, Amy, Tails, Knuckles, Shadow, Rouge, Silver collect rings
  * Steve collects TNT
+ * Luke, Yoda, Leia collect lightsabers
+ * Vader, Stormtrooper, Boba Fett collect death stars
  * Others collect orbs
  */
 export function getCollectibleTypeForSkin(skinId: string): CollectibleType {
@@ -206,6 +280,10 @@ export function getCollectibleTypeForSkin(skinId: string): CollectibleType {
     return 'ring';
   } else if (skinId === 'steve') {
     return 'tnt';
+  } else if (['luke', 'yoda', 'leia'].includes(skinId)) {
+    return 'lightsaber';
+  } else if (['vader', 'stormtrooper', 'bobafett'].includes(skinId)) {
+    return 'deathstar';
   } else {
     return 'orb';
   }

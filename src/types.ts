@@ -49,7 +49,7 @@ export interface Controls {
   analogAngle: number;
 }
 
-export type CollectibleType = 'orb' | 'coin' | 'ring' | 'tnt' | 'star';
+export type CollectibleType = 'orb' | 'coin' | 'ring' | 'tnt' | 'star' | 'lightsaber' | 'deathstar';
 
 export interface Collectible {
   mesh: THREE.Mesh;

@@ -101,6 +101,12 @@ const SKIN_EMOJIS: Record<string, string> = {
   shadow: '⚫',
   rouge: '🦇',
   silver: '⚪',
+  luke: '⚔️',
+  vader: '🖤',
+  yoda: '🟢',
+  leia: '👸',
+  stormtrooper: '⚪',
+  bobafett: '🎯',
 };
 
 const SKIN_DESCRIPTIONS: Record<string, string> = {
@@ -118,6 +124,12 @@ const SKIN_DESCRIPTIONS: Record<string, string> = {
   shadow: 'Ultimate lifeform',
   rouge: 'Jewel thief',
   silver: 'Psychic hedgehog',
+  luke: 'Jedi Knight',
+  vader: 'Dark Lord of the Sith',
+  yoda: 'Wise Jedi Master',
+  leia: 'Rebel leader',
+  stormtrooper: 'Imperial soldier',
+  bobafett: 'Legendary bounty hunter',
 };
 
 // Wait for DOM to be ready

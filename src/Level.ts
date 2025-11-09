@@ -639,6 +639,99 @@ export class Level {
         metalness: 0.9,
         roughness: 0.1,
       });
+    } else if (this.collectibleType === 'lightsaber') {
+      // Create a lightsaber (miniature) - glowing blade + handle
+      const group = new THREE.Group();
+
+      // Blade - glowing cylinder (blue)
+      const bladeGeometry = new THREE.CylinderGeometry(0.06, 0.06, 0.7, 16);
+      const bladeMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00BFFF,
+        emissive: 0x00BFFF,
+        emissiveIntensity: 1.0,
+        metalness: 0.2,
+        roughness: 0.1,
+        transparent: true,
+        opacity: 0.9,
+      });
+      const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+      blade.position.set(0, 0.35, 0);
+      group.add(blade);
+
+      // Handle - metallic cylinder
+      const handleGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 16);
+      const handleMaterial = new THREE.MeshStandardMaterial({
+        color: 0x4A4A4A,
+        metalness: 1.0,
+        roughness: 0.2,
+      });
+      const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+      handle.position.set(0, -0.15, 0);
+      group.add(handle);
+
+      // Use the group as the mesh
+      group.position.set(x, y, z);
+      group.castShadow = true;
+      this.scene.add(group);
+
+      return {
+        mesh: group as any,
+        position: new THREE.Vector3(x, y, z),
+        collected: false,
+        value,
+        type: this.collectibleType,
+      };
+    } else if (this.collectibleType === 'deathstar') {
+      // Create a miniature Death Star - sphere with equatorial trench
+      const group = new THREE.Group();
+
+      // Main sphere
+      const sphereGeometry = new THREE.SphereGeometry(0.4, 32, 32);
+      const sphereMaterial = new THREE.MeshStandardMaterial({
+        color: 0x7A7A7A,
+        emissive: 0x3A3A3A,
+        emissiveIntensity: 0.3,
+        metalness: 0.7,
+        roughness: 0.4,
+      });
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      group.add(sphere);
+
+      // Equatorial trench (torus)
+      const trenchGeometry = new THREE.TorusGeometry(0.4, 0.05, 8, 32);
+      const trenchMaterial = new THREE.MeshStandardMaterial({
+        color: 0x3A3A3A,
+        metalness: 0.5,
+        roughness: 0.6,
+      });
+      const trench = new THREE.Mesh(trenchGeometry, trenchMaterial);
+      trench.rotation.x = Math.PI / 2;
+      group.add(trench);
+
+      // Superlaser dish (small glowing circle on front)
+      const dishGeometry = new THREE.CircleGeometry(0.1, 16);
+      const dishMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00FF00,
+        emissive: 0x00FF00,
+        emissiveIntensity: 0.6,
+        metalness: 0.3,
+        roughness: 0.2,
+      });
+      const dish = new THREE.Mesh(dishGeometry, dishMaterial);
+      dish.position.set(0, 0.15, 0.38);
+      group.add(dish);
+
+      group.position.set(x, y, z);
+      group.castShadow = true;
+      this.scene.add(group);
+
+      return {
+        mesh: group as any,
+        position: new THREE.Vector3(x, y, z),
+        collected: false,
+        value,
+        type: this.collectibleType,
+      };
     } else {
       // Default orb (octahedron)
       geometry = new THREE.OctahedronGeometry(0.4);
