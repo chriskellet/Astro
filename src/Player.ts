@@ -59,6 +59,7 @@ export class Player {
   private isWalking: boolean = false;
   private targetRotationY: number = 0;
   private rotationSpeed: number = 8; // radians per second
+  private actualRotationSpeed: number = 0; // actual rotation speed applied (for debug)
 
   // Idle animation system
   private idleTime: number = 0;
@@ -558,7 +559,7 @@ export class Player {
     }
 
     // Smoothly interpolate rotation towards target
-    this.updateRotation(deltaTime);
+    this.updateRotation(deltaTime, controls);
 
     // Apply gravity
     this.physics.applyGravity(this.state.velocity, deltaTime);
@@ -1005,7 +1006,7 @@ export class Player {
     }
   }
 
-  private updateRotation(deltaTime: number): void {
+  private updateRotation(deltaTime: number, controls: Controls): void {
     // Calculate the shortest rotation difference
     let rotationDiff = this.targetRotationY - this.mesh.rotation.y;
 
@@ -1015,7 +1016,16 @@ export class Player {
 
     // Smoothly interpolate rotation
     // Use slower rotation speed in over-the-shoulder mode to prevent dizziness
-    const rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
+    let rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
+
+    // In over-the-shoulder mode, apply analog magnitude to rotation speed
+    if (this.cameraMode === 'over-shoulder') {
+      rotationSpeed *= controls.analogMagnitude;
+    }
+
+    // Store actual rotation speed for debug display
+    this.actualRotationSpeed = rotationSpeed;
+
     const maxRotationStep = rotationSpeed * deltaTime;
 
     if (Math.abs(rotationDiff) < maxRotationStep) {
@@ -1075,12 +1085,9 @@ export class Player {
   }
 
   public getDebugInfo(): { rotationSpeed: number; forwardSpeed: number; lateralSpeed: number } {
-    // Calculate actual rotation speed applied this frame
-    const rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
-
-    // Forward speed is Z velocity, lateral is X velocity
+    // Return the actual rotation speed that was applied in the last update
     return {
-      rotationSpeed: rotationSpeed,
+      rotationSpeed: this.actualRotationSpeed,
       forwardSpeed: this.state.velocity.z,
       lateralSpeed: this.state.velocity.x,
     };
