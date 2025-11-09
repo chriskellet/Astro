@@ -58,6 +58,14 @@ export class Player {
   private targetRotationY: number = 0;
   private rotationSpeed: number = 8; // radians per second
 
+  // Idle animation system
+  private idleTime: number = 0;
+  private idleAnimationThreshold: number = 5; // seconds before starting idle animation
+  private idleAnimationType: 'dance' | 'sit' | null = null;
+
+  // Falling animation
+  private fallingFastThreshold: number = -15; // velocity threshold for flailing animation
+
   constructor(physics: Physics, camera: THREE.Camera, particles: ParticleSystem, skin?: SkinDefinition) {
     this.physics = physics;
     this.camera = camera;
@@ -451,6 +459,10 @@ export class Player {
   }
 
   public update(controls: Controls, deltaTime: number, platforms: any[]): void {
+    // Check if any input is active (for idle animation tracking)
+    const hasInput = controls.left || controls.right || controls.forward ||
+                     controls.backward || controls.jump || controls.booster;
+
     // Apply movement with acceleration
     const moveVector = new THREE.Vector3();
 
@@ -610,12 +622,19 @@ export class Player {
       if (thrustMultiplier > 0.1) {
         this.particles.emitFlame(leftFootPos, 2);
         this.particles.emitFlame(rightFootPos, 2);
-        this.particles.emitSmoke(leftFootPos, 1);
-        this.particles.emitSmoke(rightFootPos, 1);
+        // Emit smoke with player velocity for trailing effect (reduced count)
+        if (Math.random() > 0.3) { // Only emit 70% of the time to reduce density
+          this.particles.emitSmoke(leftFootPos, 1, this.state.velocity);
+        }
+        if (Math.random() > 0.3) {
+          this.particles.emitSmoke(rightFootPos, 1, this.state.velocity);
+        }
       } else {
-        // Spluttering - less particles
-        this.particles.emitSmoke(leftFootPos, 1);
-        this.particles.emitSmoke(rightFootPos, 1);
+        // Spluttering - less smoke
+        if (Math.random() > 0.5) { // Only emit 50% of the time when spluttering
+          this.particles.emitSmoke(leftFootPos, 1, this.state.velocity);
+          this.particles.emitSmoke(rightFootPos, 1, this.state.velocity);
+        }
       }
 
       // Show flame visuals with opacity based on thrust
@@ -646,6 +665,21 @@ export class Player {
     this.mesh.position.copy(this.state.position);
     this.mesh.position.y += 0.75; // Offset to prevent feet sinking into ground
 
+    // Track idle time for idle animations
+    if (!hasInput && collision.grounded && !this.state.isJumping) {
+      this.idleTime += deltaTime;
+
+      // Start idle animation after threshold
+      if (this.idleTime >= this.idleAnimationThreshold && this.idleAnimationType === null) {
+        // Randomly choose between dance and sit
+        this.idleAnimationType = Math.random() > 0.5 ? 'dance' : 'sit';
+      }
+    } else {
+      // Reset idle animation when there's input or not grounded
+      this.idleTime = 0;
+      this.idleAnimationType = null;
+    }
+
     // Professional animation system
     this.updateAnimations(deltaTime, moveVector);
 
@@ -656,6 +690,9 @@ export class Player {
   private updateAnimations(deltaTime: number, moveVector: THREE.Vector3): void {
     this.animationTime += deltaTime;
     this.isWalking = moveVector.length() > 0;
+
+    // Check if falling fast for flailing animation
+    const isFallingFast = this.state.velocity.y < this.fallingFastThreshold;
 
     // ===== WALKING ANIMATION =====
     if (this.isWalking) {
@@ -709,36 +746,115 @@ export class Player {
       // Smoothly return to idle pose
       const idleSpeed = deltaTime * 5;
 
-      // Reset leg rotations smoothly
-      this.bodyParts.leftUpperLeg.rotation.x *= (1 - idleSpeed);
-      this.bodyParts.rightUpperLeg.rotation.x *= (1 - idleSpeed);
-      this.bodyParts.leftLowerLeg.rotation.x *= (1 - idleSpeed);
-      this.bodyParts.rightLowerLeg.rotation.x *= (1 - idleSpeed);
-      this.bodyParts.leftFoot.rotation.x *= (1 - idleSpeed);
-      this.bodyParts.rightFoot.rotation.x *= (1 - idleSpeed);
+      if (this.idleAnimationType === 'dance') {
+        // ===== DANCE ANIMATION =====
+        const danceSpeed = this.animationTime * 4;
+        const danceBeat = Math.sin(danceSpeed);
+        const danceBeat2 = Math.sin(danceSpeed * 2);
 
-      // Gentle arm sway when idle
-      const idleSway = Math.sin(this.animationTime * 1.5) * 0.1;
-      this.bodyParts.leftUpperArm.rotation.x = idleSway;
-      this.bodyParts.rightUpperArm.rotation.x = -idleSway;
-      this.bodyParts.leftLowerArm.rotation.x = 0;
-      this.bodyParts.rightLowerArm.rotation.x = 0;
+        // Bouncing motion
+        const bounce = Math.abs(Math.sin(danceSpeed * 2)) * 0.15;
+        this.mesh.position.y += bounce;
 
-      // Reset torso rotation
-      this.bodyParts.torso.rotation.y *= (1 - idleSpeed);
-      this.bodyParts.torso.rotation.z *= (1 - idleSpeed);
+        // Arms move up and down with rhythm
+        this.bodyParts.leftUpperArm.rotation.z = -0.5 + danceBeat * 0.8;
+        this.bodyParts.rightUpperArm.rotation.z = 0.5 - danceBeat * 0.8;
+        this.bodyParts.leftUpperArm.rotation.x = -0.3 + Math.abs(danceBeat) * 0.5;
+        this.bodyParts.rightUpperArm.rotation.x = -0.3 + Math.abs(danceBeat) * 0.5;
 
-      // Gentle breathing animation
-      const breathingCycle = Math.sin(this.animationTime * 2) * 0.02;
-      this.bodyParts.torso.scale.y = 1 + breathingCycle;
-      this.bodyParts.head.position.y = 0.65 + breathingCycle * 0.5;
+        // Lower arms bend with the beat
+        this.bodyParts.leftLowerArm.rotation.x = Math.abs(danceBeat) * 0.8;
+        this.bodyParts.rightLowerArm.rotation.x = Math.abs(danceBeat) * 0.8;
 
-      // Subtle head rotation (looking around)
-      this.bodyParts.head.rotation.y = Math.sin(this.animationTime * 0.8) * 0.15;
+        // Legs alternate lifting slightly
+        this.bodyParts.leftUpperLeg.rotation.x = danceBeat2 * 0.3;
+        this.bodyParts.rightUpperLeg.rotation.x = -danceBeat2 * 0.3;
+        this.bodyParts.leftLowerLeg.rotation.x = Math.max(0, danceBeat2 * 0.4);
+        this.bodyParts.rightLowerLeg.rotation.x = Math.max(0, -danceBeat2 * 0.4);
+
+        // Torso sways side to side
+        this.bodyParts.torso.rotation.z = Math.sin(danceSpeed) * 0.15;
+        this.bodyParts.torso.rotation.y = Math.cos(danceSpeed * 0.5) * 0.2;
+
+        // Head bobs with the music
+        this.bodyParts.head.rotation.y = Math.sin(danceSpeed * 1.5) * 0.2;
+        this.bodyParts.head.position.y = 0.65 + bounce;
+
+      } else if (this.idleAnimationType === 'sit') {
+        // ===== SIT ANIMATION =====
+        // Transition smoothly to sitting pose
+        const sitTransition = Math.min(1, (this.idleTime - this.idleAnimationThreshold) * 2);
+
+        // Lower body position (sitting down)
+        const sitHeight = sitTransition * -0.5;
+        this.mesh.position.y += sitHeight;
+
+        // Legs bent in sitting position
+        this.bodyParts.leftUpperLeg.rotation.x = THREE.MathUtils.lerp(0, 1.3, sitTransition);
+        this.bodyParts.rightUpperLeg.rotation.x = THREE.MathUtils.lerp(0, 1.3, sitTransition);
+        this.bodyParts.leftLowerLeg.rotation.x = THREE.MathUtils.lerp(0, 1.4, sitTransition);
+        this.bodyParts.rightLowerLeg.rotation.x = THREE.MathUtils.lerp(0, 1.4, sitTransition);
+
+        // Legs spread slightly
+        this.bodyParts.leftUpperLeg.rotation.z = -0.2 * sitTransition;
+        this.bodyParts.rightUpperLeg.rotation.z = 0.2 * sitTransition;
+
+        // Feet flat on ground
+        this.bodyParts.leftFoot.rotation.x = -0.3 * sitTransition;
+        this.bodyParts.rightFoot.rotation.x = -0.3 * sitTransition;
+
+        // Arms resting on legs or ground
+        this.bodyParts.leftUpperArm.rotation.x = THREE.MathUtils.lerp(0, 0.8, sitTransition);
+        this.bodyParts.rightUpperArm.rotation.x = THREE.MathUtils.lerp(0, 0.8, sitTransition);
+        this.bodyParts.leftLowerArm.rotation.x = 0.5 * sitTransition;
+        this.bodyParts.rightLowerArm.rotation.x = 0.5 * sitTransition;
+
+        // Torso slightly forward
+        this.bodyParts.torso.rotation.x = 0.2 * sitTransition;
+
+        // Head looking around lazily when fully sitting
+        if (sitTransition >= 0.9) {
+          this.bodyParts.head.rotation.y = Math.sin(this.animationTime * 0.5) * 0.3;
+          this.bodyParts.head.rotation.x = Math.sin(this.animationTime * 0.3) * 0.15;
+        }
+
+        // Gentle breathing
+        const breathingCycle = Math.sin(this.animationTime * 1.5) * 0.02;
+        this.bodyParts.torso.scale.y = 1 + breathingCycle;
+
+      } else {
+        // ===== DEFAULT IDLE (Standing) =====
+        // Reset leg rotations smoothly
+        this.bodyParts.leftUpperLeg.rotation.x *= (1 - idleSpeed);
+        this.bodyParts.rightUpperLeg.rotation.x *= (1 - idleSpeed);
+        this.bodyParts.leftLowerLeg.rotation.x *= (1 - idleSpeed);
+        this.bodyParts.rightLowerLeg.rotation.x *= (1 - idleSpeed);
+        this.bodyParts.leftFoot.rotation.x *= (1 - idleSpeed);
+        this.bodyParts.rightFoot.rotation.x *= (1 - idleSpeed);
+
+        // Gentle arm sway when idle
+        const idleSway = Math.sin(this.animationTime * 1.5) * 0.1;
+        this.bodyParts.leftUpperArm.rotation.x = idleSway;
+        this.bodyParts.rightUpperArm.rotation.x = -idleSway;
+        this.bodyParts.leftLowerArm.rotation.x = 0;
+        this.bodyParts.rightLowerArm.rotation.x = 0;
+
+        // Reset torso rotation
+        this.bodyParts.torso.rotation.y *= (1 - idleSpeed);
+        this.bodyParts.torso.rotation.z *= (1 - idleSpeed);
+
+        // Gentle breathing animation
+        const breathingCycle = Math.sin(this.animationTime * 2) * 0.02;
+        this.bodyParts.torso.scale.y = 1 + breathingCycle;
+        this.bodyParts.head.position.y = 0.65 + breathingCycle * 0.5;
+
+        // Subtle head rotation (looking around)
+        this.bodyParts.head.rotation.y = Math.sin(this.animationTime * 0.8) * 0.15;
+      }
     }
 
     // ===== JUMPING ANIMATION =====
-    if (this.state.isJumping) {
+    if (this.state.isJumping && !isFallingFast) {
       // Arms up during jump
       const jumpArmPose = Math.min(1, Math.abs(this.state.velocity.y) * 0.1);
       this.bodyParts.leftUpperArm.rotation.z = jumpArmPose * 0.5;
@@ -770,13 +886,55 @@ export class Player {
       this.bodyParts.torso.rotation.x *= 0.9;
     }
 
-    // ===== ROCKET BOOST ANIMATION =====
+    // ===== FALLING/FLAILING ANIMATION =====
+    // When falling fast, character flails arms and legs wildly
+    if (isFallingFast && !this.state.isBoosterActive) {
+      // Fast chaotic arm windmilling
+      const flailSpeed = this.animationTime * 15;
+      const leftArmFlail = Math.sin(flailSpeed);
+      const rightArmFlail = Math.sin(flailSpeed + Math.PI);
+
+      // Arms windmill in opposite directions
+      this.bodyParts.leftUpperArm.rotation.x = leftArmFlail * 1.8;
+      this.bodyParts.rightUpperArm.rotation.x = rightArmFlail * 1.8;
+      this.bodyParts.leftUpperArm.rotation.z = Math.cos(flailSpeed) * 0.8;
+      this.bodyParts.rightUpperArm.rotation.z = -Math.cos(flailSpeed) * 0.8;
+
+      // Lower arms also flail
+      this.bodyParts.leftLowerArm.rotation.x = Math.abs(leftArmFlail) * 0.6;
+      this.bodyParts.rightLowerArm.rotation.x = Math.abs(rightArmFlail) * 0.6;
+
+      // Legs kick wildly
+      const legFlailSpeed = this.animationTime * 12;
+      this.bodyParts.leftUpperLeg.rotation.x = Math.sin(legFlailSpeed) * 1.2;
+      this.bodyParts.rightUpperLeg.rotation.x = Math.sin(legFlailSpeed + Math.PI) * 1.2;
+      this.bodyParts.leftLowerLeg.rotation.x = Math.max(0, Math.sin(legFlailSpeed)) * 1.5;
+      this.bodyParts.rightLowerLeg.rotation.x = Math.max(0, Math.sin(legFlailSpeed + Math.PI)) * 1.5;
+
+      // Slight leg spread
+      this.bodyParts.leftUpperLeg.rotation.z = -0.3;
+      this.bodyParts.rightUpperLeg.rotation.z = 0.3;
+
+      // Torso tilts back and forth
+      this.bodyParts.torso.rotation.x = Math.sin(flailSpeed * 0.8) * 0.3;
+      this.bodyParts.torso.rotation.z = Math.cos(flailSpeed * 0.6) * 0.2;
+
+      // Head looks around frantically
+      this.bodyParts.head.rotation.x = Math.sin(flailSpeed * 1.2) * 0.3;
+      this.bodyParts.head.rotation.y = Math.cos(flailSpeed * 0.9) * 0.4;
+    }
+
+    // ===== ROCKET BOOST ANIMATION (Iron Man Style) =====
     if (this.state.isBoosterActive) {
-      // Spread arms out during boost
-      this.bodyParts.leftUpperArm.rotation.z = 1.2;
-      this.bodyParts.rightUpperArm.rotation.z = -1.2;
-      this.bodyParts.leftUpperArm.rotation.x = -0.3;
-      this.bodyParts.rightUpperArm.rotation.x = -0.3;
+      // Arms back and slightly out during boost (Iron Man flying pose)
+      this.bodyParts.leftUpperArm.rotation.z = 0.4;
+      this.bodyParts.rightUpperArm.rotation.z = -0.4;
+      this.bodyParts.leftUpperArm.rotation.x = 0.8; // Arms back
+      this.bodyParts.rightUpperArm.rotation.x = 0.8;
+
+      // Lower arms angled back
+      this.bodyParts.leftLowerArm.rotation.x = -0.3;
+      this.bodyParts.rightLowerArm.rotation.x = -0.3;
 
       // Legs extended down with slight spread
       this.bodyParts.leftUpperLeg.rotation.x = -0.2;
@@ -790,11 +948,11 @@ export class Player {
       this.bodyParts.leftFoot.rotation.x = 0.3;
       this.bodyParts.rightFoot.rotation.x = 0.3;
 
-      // Slight backward lean
-      this.bodyParts.torso.rotation.x = -0.15;
+      // Forward lean (Iron Man style)
+      this.bodyParts.torso.rotation.x = 0.3;
 
-      // Head look up
-      this.bodyParts.head.rotation.x = -0.2;
+      // Head look forward/slightly up
+      this.bodyParts.head.rotation.x = -0.1;
     } else if (!this.state.isJumping && !this.isWalking) {
       // Reset boost pose
       this.bodyParts.leftUpperLeg.rotation.z *= 0.95;

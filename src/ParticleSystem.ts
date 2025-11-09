@@ -70,21 +70,31 @@ export class ParticleSystem {
     this.cleanupExcess();
   }
 
-  public emitSmoke(position: THREE.Vector3, count: number = 2): void {
+  public emitSmoke(position: THREE.Vector3, count: number = 2, playerVelocity?: THREE.Vector3): void {
     for (let i = 0; i < count; i++) {
+      // Create smoke that trails behind the player
       const velocity = new THREE.Vector3(
-        (Math.random() - 0.5) * 1,
-        -3 + Math.random() * 1,
-        (Math.random() - 0.5) * 1
+        (Math.random() - 0.5) * 0.5, // Less horizontal spread
+        -1 + Math.random() * 0.5,    // Slower downward velocity
+        (Math.random() - 0.5) * 0.5
       );
+
+      // If player is moving, add opposite velocity to create trailing effect
+      if (playerVelocity) {
+        // Smoke moves opposite to player's horizontal movement
+        velocity.x -= playerVelocity.x * 0.8;
+        velocity.z -= playerVelocity.z * 0.8;
+        // Slightly affected by vertical movement
+        velocity.y -= playerVelocity.y * 0.3;
+      }
 
       const particle: Particle = {
         position: position.clone(),
         velocity,
         lifetime: 0,
-        maxLifetime: 0.5 + Math.random() * 0.3,
-        size: 0.2 + Math.random() * 0.15,
-        color: new THREE.Color(0.7, 0.7, 0.7),
+        maxLifetime: 1.0 + Math.random() * 0.5, // Longer lifetime for trail effect
+        size: 0.15 + Math.random() * 0.1,       // Slightly smaller initial size
+        color: new THREE.Color(0.95, 0.95, 0.95), // Start very light (almost white)
         type: 'smoke',
       };
 
@@ -225,17 +235,28 @@ export class ParticleSystem {
       particle.position.add(particle.velocity.clone().multiplyScalar(deltaTime));
       mesh.position.copy(particle.position);
 
-      // Apply gravity to smoke and flames
-      particle.velocity.y += -15 * deltaTime;
+      // Apply gravity to smoke and flames (less gravity for smoke)
+      if (particle.type === 'smoke') {
+        particle.velocity.y += -3 * deltaTime; // Gentler fall for smoke
+      } else {
+        particle.velocity.y += -15 * deltaTime; // Standard gravity for other particles
+      }
 
       // Fade out
       const progress = particle.lifetime / particle.maxLifetime;
       const material = mesh.material as THREE.MeshBasicMaterial;
       material.opacity = 1 - progress;
 
-      // Scale up smoke
-      if (particle.color.r === 0.7) {
-        const scale = 1 + progress * 2;
+      // Smoke-specific effects: darken and scale up over time
+      if (particle.type === 'smoke') {
+        // Darken from light gray (0.95) to dark gray (0.3) as it ages
+        const startBrightness = 0.95;
+        const endBrightness = 0.3;
+        const currentBrightness = startBrightness + (endBrightness - startBrightness) * progress;
+        material.color.setRGB(currentBrightness, currentBrightness, currentBrightness);
+
+        // Scale up smoke particles as they age (dispersing effect)
+        const scale = 1 + progress * 3;
         mesh.scale.setScalar(scale);
       }
     }
