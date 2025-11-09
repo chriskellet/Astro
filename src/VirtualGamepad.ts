@@ -165,18 +165,28 @@ export class VirtualGamepad {
     const angle = Math.atan2(dy, dx);
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Dead zone threshold - larger for better control
-    const deadZone = 35;
+    // Multi-zone analog control for fine adjustments
+    const innerDeadZone = 10;  // True dead zone - no input
+    const fineControlZone = 35; // Fine control zone - linear, small magnitude
+    const maxFineControlMagnitude = 0.2; // Cap fine control at 20% speed
 
-    // Calculate analog values with dead zone and non-linear curve
+    // Calculate analog values with multi-zone approach
     let magnitude = 0;
-    if (distance > deadZone) {
-      // Map distance from deadZone to radius -> 0 to 1
-      const adjustedDistance = (distance - deadZone) / (this.dpadRadius - deadZone);
-      magnitude = Math.min(adjustedDistance, 1.0);
 
-      // Apply quadratic curve for smoother acceleration (starts slow, ramps up)
-      magnitude = magnitude * magnitude;
+    if (distance <= innerDeadZone) {
+      // True dead zone - no input
+      magnitude = 0;
+    } else if (distance <= fineControlZone) {
+      // Fine control zone - linear mapping to small magnitude for precise adjustments
+      const fineZoneProgress = (distance - innerDeadZone) / (fineControlZone - innerDeadZone);
+      magnitude = fineZoneProgress * maxFineControlMagnitude;
+    } else {
+      // Acceleration zone - quadratic curve from max fine control to full speed
+      const adjustedDistance = (distance - fineControlZone) / (this.dpadRadius - fineControlZone);
+      const curveProgress = Math.min(adjustedDistance, 1.0);
+
+      // Quadratic curve starting from where fine control ended
+      magnitude = maxFineControlMagnitude + (curveProgress * curveProgress) * (1.0 - maxFineControlMagnitude);
     }
 
     this.controls.analogMagnitude = magnitude;
@@ -188,7 +198,7 @@ export class VirtualGamepad {
     this.controls.forward = false;
     this.controls.backward = false;
 
-    if (distance > deadZone) {
+    if (distance > innerDeadZone) {
       // Convert angle to direction (8-way movement)
       const deg = angle * (180 / Math.PI);
 
