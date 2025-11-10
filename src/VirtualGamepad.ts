@@ -28,6 +28,7 @@ export class VirtualGamepad {
   private mouseSensitivity: number = 0.002; // Radians per pixel
   private currentCameraMode: 'traditional' | 'over-shoulder' = 'traditional';
   private mouseDownOnJumpButton: boolean = false;
+  private lastSpacebarTapTime: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -123,14 +124,23 @@ export class VirtualGamepad {
       this.controls.right = true;
     }
 
-    // Spacebar for jump
+    // Spacebar for jump/booster (double-tap)
     if (e.key === ' ') {
-      this.controls.jump = true;
-    }
+      const now = Date.now();
+      const timeSinceLastTap = now - this.lastSpacebarTapTime;
 
-    // Shift for booster
-    if (e.key === 'Shift') {
-      this.controls.booster = true;
+      // Check for double-tap
+      if (timeSinceLastTap < this.doubleTapWindow && timeSinceLastTap > 0) {
+        // Double-tap detected - activate booster
+        this.controls.booster = true;
+        this.controls.jump = false; // Don't trigger regular jump on second tap
+      } else {
+        // Single tap - jump
+        this.controls.jump = true;
+        this.controls.booster = false;
+      }
+
+      this.lastSpacebarTapTime = now;
     }
 
     // C key to toggle camera
@@ -161,10 +171,6 @@ export class VirtualGamepad {
     // Spacebar
     if (e.key === ' ') {
       this.controls.jump = false;
-    }
-
-    // Shift
-    if (e.key === 'Shift') {
       this.controls.booster = false;
     }
   }
