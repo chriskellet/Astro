@@ -689,17 +689,16 @@ export class Player {
       moveVector.normalize();
 
       // Update target rotation based on movement direction
-      // In traditional mode, only rotate if moving forward/backward (not pure strafing)
+      // In over-shoulder mode: only rotate if moving forward/backward (strafe when only left/right)
       if (this.cameraMode === 'over-shoulder') {
-        // Over-shoulder: always rotate to face movement direction
-        this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
-      } else {
-        // Traditional mode: only rotate when moving forward/backward
-        // Pure left/right strafing doesn't change facing direction
+        // Only rotate if forward or backward is pressed (not pure strafing)
         if (controls.forward || controls.backward) {
           this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
         }
-        // If only left/right, keep current rotation (strafe without turning)
+        // If only left/right, keep current rotation (pure strafe)
+      } else {
+        // Traditional mode: always rotate to face movement direction
+        this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
       }
 
       // Only apply movement if magnitude is above threshold
