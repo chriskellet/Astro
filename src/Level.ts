@@ -3,6 +3,8 @@ import { Platform, Collectible, LevelData, Enemy, CollectibleType, EnemyType, Su
 import { EnemyFactory } from './EnemyFactory';
 import { TextureManager } from './TextureManager';
 import { createBeveledBoxGeometry } from './GeometryUtils';
+import { GrassSystem } from './GrassSystem';
+import { AdvancedMaterialManager } from './AdvancedMaterialManager';
 
 export class Level {
   private scene: THREE.Scene;
@@ -10,12 +12,16 @@ export class Level {
   private enemyFactory: EnemyFactory;
   private collectibleType: CollectibleType;
   private textureManager: TextureManager;
+  private grassSystems: GrassSystem[] = [];
+  private advancedMaterialManager: AdvancedMaterialManager;
+  private useAdvancedMaterials: boolean = true; // Toggle for performance
 
   constructor(scene: THREE.Scene, levelNumber: number = 1, collectibleType: CollectibleType = 'orb') {
     this.scene = scene;
     this.enemyFactory = new EnemyFactory(scene);
     this.collectibleType = collectibleType;
     this.textureManager = new TextureManager();
+    this.advancedMaterialManager = new AdvancedMaterialManager();
     this.data = this.createLevel(levelNumber);
   }
 
@@ -471,20 +477,33 @@ export class Level {
       textureType = surfaceType || 'default';
     }
 
-    // Get texture and normal map from texture manager
-    const texture = this.textureManager.getTexture(textureType);
-    const normalMap = this.textureManager.getNormalMap(textureType);
+    // Choose material system based on settings and surface type
+    let material: THREE.Material;
 
-    // Create enhanced material with textures
-    const material = new THREE.MeshStandardMaterial({
-      color: finalColor,
-      map: texture,
-      normalMap: normalMap,
-      normalScale: new THREE.Vector2(0.5, 0.5), // Subtle normal mapping
-      metalness: platformType === 'elevator' || platformType === 'moving' ? 0.4 : 0.15,
-      roughness: textureType === 'ice' ? 0.3 : 0.75,
-      envMapIntensity: textureType === 'ice' ? 1.2 : 0.8,
-    });
+    if (this.useAdvancedMaterials && (textureType === 'stone' || textureType === 'default')) {
+      // Use parallax occlusion mapping for stone and default platforms
+      material = this.advancedMaterialManager.getMaterial(textureType);
+    } else if (this.useAdvancedMaterials && textureType === 'grass') {
+      // Use enhanced PBR for grass (grass blades will be added separately)
+      material = this.advancedMaterialManager.getMaterial(textureType);
+    } else if (this.useAdvancedMaterials && ['ice', 'spring', 'elevator', 'moving', 'falling'].includes(textureType)) {
+      // Use enhanced PBR with roughness maps
+      material = this.advancedMaterialManager.getMaterial(textureType);
+    } else {
+      // Fallback to basic textured material
+      const texture = this.textureManager.getTexture(textureType);
+      const normalMap = this.textureManager.getNormalMap(textureType);
+
+      material = new THREE.MeshStandardMaterial({
+        color: finalColor,
+        map: texture,
+        normalMap: normalMap,
+        normalScale: new THREE.Vector2(0.5, 0.5),
+        metalness: platformType === 'elevator' || platformType === 'moving' ? 0.4 : 0.15,
+        roughness: textureType === 'ice' ? 0.3 : 0.75,
+        envMapIntensity: textureType === 'ice' ? 1.2 : 0.8,
+      });
+    }
 
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y, z);
@@ -495,7 +514,7 @@ export class Level {
     const edges = new THREE.EdgesGeometry(geometry);
     const lineMaterial = new THREE.LineBasicMaterial({
       color: 0xffffff,
-      opacity: 0.15,
+      opacity: 0.1,
       transparent: true
     });
     const edgeLines = new THREE.LineSegments(edges, lineMaterial);
@@ -513,6 +532,17 @@ export class Level {
 
     // Initialize platform-specific properties
     this.initializePlatformProperties(platform);
+
+    // Add instanced grass blades for grass platforms
+    if (textureType === 'grass' && width >= 4 && depth >= 4) {
+      const grassSystem = new GrassSystem();
+      grassSystem.createGrassOnPlatform(
+        this.scene,
+        new THREE.Vector3(x, y, z),
+        new THREE.Vector3(width, height, depth)
+      );
+      this.grassSystems.push(grassSystem);
+    }
 
     return platform;
   }
@@ -956,7 +986,16 @@ export class Level {
       this.scene.remove(this.data.chickenBot.mesh);
     }
 
+    // Dispose of grass systems
+    this.grassSystems.forEach((grassSystem) => {
+      grassSystem.dispose(this.scene);
+    });
+    this.grassSystems = [];
+
     // Dispose of texture manager resources
     this.textureManager.dispose();
+
+    // Dispose of advanced material manager
+    this.advancedMaterialManager.dispose();
   }
 }
