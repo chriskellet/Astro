@@ -12,49 +12,17 @@ export class AdvancedMaterialManager {
   /**
    * Get an advanced material for a surface type
    */
-  public getMaterial(surfaceType: SurfaceType | string): THREE.ShaderMaterial | THREE.MeshStandardMaterial {
+  public getMaterial(surfaceType: SurfaceType | string): THREE.MeshStandardMaterial {
     const cacheKey = `material_${surfaceType}`;
 
     if (this.materials.has(cacheKey)) {
-      return this.materials.get(cacheKey)! as THREE.ShaderMaterial | THREE.MeshStandardMaterial;
+      return this.materials.get(cacheKey)! as THREE.MeshStandardMaterial;
     }
 
-    let material: THREE.ShaderMaterial | THREE.MeshStandardMaterial;
-
-    // Use parallax mapping for stone and default platforms
-    if (surfaceType === 'stone' || surfaceType === 'default') {
-      material = this.createParallaxMaterial(surfaceType);
-    } else {
-      material = this.createEnhancedPBRMaterial(surfaceType);
-    }
+    // Use enhanced PBR materials for all types (parallax shader had transparency issues)
+    const material = this.createEnhancedPBRMaterial(surfaceType);
 
     this.materials.set(cacheKey, material);
-    return material;
-  }
-
-  /**
-   * Create material with parallax occlusion mapping
-   */
-  private createParallaxMaterial(surfaceType: string): THREE.ShaderMaterial {
-    const baseColor = surfaceType === 'stone' ? 0x808080 : 0x4a90e2;
-    const heightMap = this.createHeightMap(surfaceType);
-    const roughnessMap = this.createRoughnessMap(surfaceType);
-
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        baseColor: { value: new THREE.Color(baseColor) },
-        heightMap: { value: heightMap },
-        roughnessMap: { value: roughnessMap },
-        heightScale: { value: 0.08 },
-        lightPosition: { value: new THREE.Vector3(10, 20, 10) },
-        lightColor: { value: new THREE.Color(0xffffff) },
-        ambientColor: { value: new THREE.Color(0x404040) },
-      },
-      vertexShader: this.getParallaxVertexShader(),
-      fragmentShader: this.getParallaxFragmentShader(),
-      lights: false,
-    });
-
     return material;
   }
 
@@ -67,49 +35,74 @@ export class AdvancedMaterialManager {
     let color: number;
     let roughness: number;
     let metalness: number;
+    let displacementScale = 0;
+    let bumpScale = 1;
 
     switch (surfaceType) {
       case 'ice':
         color = 0xadd8e6;
         roughness = 0.15;
         metalness = 0.1;
+        bumpScale = 0.3;
         break;
       case 'grass':
         color = 0x50c878;
         roughness = 0.95;
         metalness = 0.0;
+        bumpScale = 0.8;
+        break;
+      case 'stone':
+        color = 0x808080;
+        roughness = 0.85;
+        metalness = 0.0;
+        displacementScale = 0.15;
+        bumpScale = 1.5;
         break;
       case 'spring':
         color = 0x00ff00;
         roughness = 0.4;
         metalness = 0.6;
+        bumpScale = 0.5;
         break;
       case 'elevator':
         color = 0x9370db;
         roughness = 0.3;
         metalness = 0.7;
+        bumpScale = 0.4;
         break;
       case 'moving':
         color = 0x20b2aa;
         roughness = 0.35;
         metalness = 0.65;
+        bumpScale = 0.4;
         break;
       case 'falling':
         color = 0xff9900;
         roughness = 0.5;
         metalness = 0.3;
+        bumpScale = 0.6;
         break;
       default:
         color = 0x4a90e2;
         roughness = 0.7;
         metalness = 0.2;
+        bumpScale = 0.7;
     }
+
+    // Use height map as displacement/bump for depth
+    const heightMap = (surfaceType === 'stone' || surfaceType === 'default')
+      ? this.createHeightMap(surfaceType)
+      : null;
 
     return new THREE.MeshStandardMaterial({
       color,
       roughness,
       metalness,
       roughnessMap,
+      bumpMap: heightMap || undefined,
+      bumpScale: heightMap ? bumpScale : 0,
+      displacementMap: (surfaceType === 'stone' && displacementScale > 0) ? heightMap : undefined,
+      displacementScale,
       envMapIntensity: surfaceType === 'ice' ? 1.5 : 0.8,
     });
   }
@@ -255,128 +248,6 @@ export class AdvancedMaterialManager {
 
     this.roughnessMaps.set(cacheKey, texture);
     return texture;
-  }
-
-  /**
-   * Vertex shader for parallax occlusion mapping
-   */
-  private getParallaxVertexShader(): string {
-    return `
-      varying vec2 vUv;
-      varying vec3 vViewPosition;
-      varying vec3 vNormal;
-      varying vec3 vTangent;
-      varying vec3 vBitangent;
-
-      void main() {
-        vUv = uv * 2.0; // Repeat texture
-        vNormal = normalize(normalMatrix * normal);
-
-        // Calculate tangent space
-        vec3 tangent = vec3(1.0, 0.0, 0.0);
-        vec3 bitangent = cross(normal, tangent);
-        vTangent = normalize(normalMatrix * tangent);
-        vBitangent = normalize(normalMatrix * bitangent);
-
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        vViewPosition = -mvPosition.xyz;
-
-        gl_Position = projectionMatrix * mvPosition;
-      }
-    `;
-  }
-
-  /**
-   * Fragment shader for parallax occlusion mapping
-   */
-  private getParallaxFragmentShader(): string {
-    return `
-      uniform vec3 baseColor;
-      uniform sampler2D heightMap;
-      uniform sampler2D roughnessMap;
-      uniform float heightScale;
-      uniform vec3 lightPosition;
-      uniform vec3 lightColor;
-      uniform vec3 ambientColor;
-
-      varying vec2 vUv;
-      varying vec3 vViewPosition;
-      varying vec3 vNormal;
-      varying vec3 vTangent;
-      varying vec3 vBitangent;
-
-      vec2 parallaxMapping(vec2 texCoords, vec3 viewDir) {
-        // Number of depth layers
-        const float minLayers = 10.0;
-        const float maxLayers = 32.0;
-        float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));
-
-        // Calculate size of each layer
-        float layerDepth = 1.0 / numLayers;
-        float currentLayerDepth = 0.0;
-
-        // Amount to shift texture coordinates per layer
-        vec2 P = viewDir.xy * heightScale;
-        vec2 deltaTexCoords = P / numLayers;
-
-        vec2 currentTexCoords = texCoords;
-        float currentDepthMapValue = texture2D(heightMap, currentTexCoords).r;
-
-        // Parallax occlusion mapping
-        while(currentLayerDepth < currentDepthMapValue) {
-          currentTexCoords -= deltaTexCoords;
-          currentDepthMapValue = texture2D(heightMap, currentTexCoords).r;
-          currentLayerDepth += layerDepth;
-        }
-
-        // Get texture coordinates before collision
-        vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
-
-        // Get depth after and before collision
-        float afterDepth = currentDepthMapValue - currentLayerDepth;
-        float beforeDepth = texture2D(heightMap, prevTexCoords).r - currentLayerDepth + layerDepth;
-
-        // Interpolation
-        float weight = afterDepth / (afterDepth - beforeDepth);
-        vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
-
-        return finalTexCoords;
-      }
-
-      void main() {
-        // Transform view direction to tangent space
-        mat3 TBN = mat3(vTangent, vBitangent, vNormal);
-        vec3 viewDir = normalize(vViewPosition);
-        vec3 tangentViewDir = normalize(transpose(TBN) * viewDir);
-
-        // Apply parallax mapping
-        vec2 texCoords = parallaxMapping(vUv, tangentViewDir);
-
-        // Discard fragments outside texture bounds (prevents artifacts)
-        if(texCoords.x > 2.0 || texCoords.y > 2.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
-          discard;
-
-        // Sample textures with parallax-corrected coordinates
-        float roughness = texture2D(roughnessMap, texCoords).r;
-
-        // Simple lighting calculation
-        vec3 lightDir = normalize(lightPosition - vViewPosition);
-        float diff = max(dot(vNormal, lightDir), 0.0);
-
-        // Specular
-        vec3 reflectDir = reflect(-lightDir, vNormal);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0) * (1.0 - roughness / 255.0);
-
-        // Combine lighting
-        vec3 ambient = ambientColor * baseColor;
-        vec3 diffuse = diff * lightColor * baseColor;
-        vec3 specular = spec * lightColor;
-
-        vec3 finalColor = ambient + diffuse + specular;
-
-        gl_FragColor = vec4(finalColor, 1.0);
-      }
-    `;
   }
 
   /**
