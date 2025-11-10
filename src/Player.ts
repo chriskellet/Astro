@@ -688,8 +688,18 @@ export class Player {
     if (moveVector.length() > 0) {
       moveVector.normalize();
 
-      // Always update target rotation based on movement direction
-      this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
+      // Update target rotation based on movement direction
+      // In over-shoulder mode: only rotate if moving forward/backward (strafe when only left/right)
+      if (this.cameraMode === 'over-shoulder') {
+        // Only rotate if forward or backward is pressed (not pure strafing)
+        if (controls.forward || controls.backward) {
+          this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
+        }
+        // If only left/right, keep current rotation (pure strafe)
+      } else {
+        // Traditional mode: always rotate to face movement direction
+        this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
+      }
 
       // Only apply movement if magnitude is above threshold
       // This allows rotation without movement for fine adjustments
