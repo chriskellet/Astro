@@ -813,6 +813,11 @@ export class Level {
     // Update interactive platforms
     this.updatePlatforms(deltaTime);
 
+    // Animate grass with wind
+    this.grassSystems.forEach((grassSystem) => {
+      grassSystem.updateGrass(deltaTime);
+    });
+
     // Animate collectibles with type-specific animations
     this.data.collectibles.forEach((collectible) => {
       if (!collectible.collected) {
