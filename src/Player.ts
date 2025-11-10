@@ -689,17 +689,12 @@ export class Player {
       moveVector.normalize();
 
       // Update target rotation based on movement direction
-      // In over-shoulder mode: only rotate if moving forward/backward (strafe when only left/right)
-      if (this.cameraMode === 'over-shoulder') {
-        // Only rotate if forward or backward is pressed (not pure strafing)
-        if (controls.forward || controls.backward) {
-          this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
-        }
-        // If only left/right, keep current rotation (pure strafe)
-      } else {
-        // Traditional mode: always rotate to face movement direction
+      // In over-shoulder mode: keyboard never changes rotation (only mouse does)
+      // In traditional mode: always rotate to face movement direction
+      if (this.cameraMode === 'traditional') {
         this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
       }
+      // Over-shoulder mode: rotation controlled by mouse only, not keyboard movement
 
       // Only apply movement if magnitude is above threshold
       // This allows rotation without movement for fine adjustments
