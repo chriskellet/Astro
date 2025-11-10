@@ -27,6 +27,7 @@ export class VirtualGamepad {
   private isPointerLocked: boolean = false;
   private mouseSensitivity: number = 0.002; // Radians per pixel
   private currentCameraMode: 'traditional' | 'over-shoulder' = 'traditional';
+  private mouseDownOnJumpButton: boolean = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -86,6 +87,8 @@ export class VirtualGamepad {
 
   private setupMouseListeners(): void {
     this.canvas.addEventListener('click', this.handleMouseClick.bind(this));
+    this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
     this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
 
     // Pointer lock change event
@@ -120,9 +123,14 @@ export class VirtualGamepad {
       this.controls.right = true;
     }
 
-    // Spacebar for jump (traditional mode only)
+    // Spacebar for jump
     if (e.key === ' ') {
       this.controls.jump = true;
+    }
+
+    // Shift for booster
+    if (e.key === 'Shift') {
+      this.controls.booster = true;
     }
 
     // C key to toggle camera
@@ -154,40 +162,54 @@ export class VirtualGamepad {
     if (e.key === ' ') {
       this.controls.jump = false;
     }
+
+    // Shift
+    if (e.key === 'Shift') {
+      this.controls.booster = false;
+    }
+  }
+
+  private handleMouseDown(e: MouseEvent): void {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Check if mousedown is on jump button
+    const jumpDist = Math.sqrt(
+      Math.pow(x - this.jumpButton.x, 2) + Math.pow(y - this.jumpButton.y, 2)
+    );
+
+    if (jumpDist < this.jumpButton.radius * 1.5) {
+      this.mouseDownOnJumpButton = true;
+      const now = Date.now();
+      const timeSinceLastTap = now - this.lastJumpTapTime;
+
+      // Check for double-click
+      if (timeSinceLastTap < this.doubleTapWindow && timeSinceLastTap > 0) {
+        // Double-click detected - activate booster (stays active while held)
+        this.controls.booster = true;
+        this.controls.jump = false;
+      } else {
+        // Single click - jump
+        this.controls.jump = true;
+      }
+
+      this.lastJumpTapTime = now;
+    }
+  }
+
+  private handleMouseUp(): void {
+    if (this.mouseDownOnJumpButton) {
+      this.controls.jump = false;
+      this.controls.booster = false;
+      this.mouseDownOnJumpButton = false;
+    }
   }
 
   private handleMouseClick(e: MouseEvent): void {
     const rect = this.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
-    // Check if click is on jump button
-    const jumpDist = Math.sqrt(
-      Math.pow(x - this.jumpButton.x, 2) + Math.pow(y - this.jumpButton.y, 2)
-    );
-
-    if (jumpDist < this.jumpButton.radius * 1.5) {
-      const now = Date.now();
-      const timeSinceLastTap = now - this.lastJumpTapTime;
-
-      // Check for double-click
-      if (timeSinceLastTap < this.doubleTapWindow && timeSinceLastTap > 0) {
-        // Double-click detected - activate booster
-        this.controls.booster = true;
-        setTimeout(() => {
-          this.controls.booster = false;
-        }, 100);
-      } else {
-        // Single click - jump
-        this.controls.jump = true;
-        setTimeout(() => {
-          this.controls.jump = false;
-        }, 100);
-      }
-
-      this.lastJumpTapTime = now;
-      return;
-    }
 
     // Check if click is on camera button
     const cameraDist = Math.sqrt(
@@ -210,6 +232,15 @@ export class VirtualGamepad {
 
       this.lastCameraTapTime = now;
       return;
+    }
+
+    // Check if click is on jump button (already handled in mousedown/mouseup)
+    const jumpDist = Math.sqrt(
+      Math.pow(x - this.jumpButton.x, 2) + Math.pow(y - this.jumpButton.y, 2)
+    );
+
+    if (jumpDist < this.jumpButton.radius * 1.5) {
+      return; // Already handled by mousedown/mouseup
     }
 
     // Click anywhere else in over-shoulder mode to request pointer lock
@@ -566,7 +597,7 @@ export class VirtualGamepad {
     const controls = { ...this.controls };
 
     // In over-shoulder mode, convert keyboard inputs to analog values
-    if (this.currentCameraMode === 'over-shoulder' && !this.isPointerLocked) {
+    if (this.currentCameraMode === 'over-shoulder') {
       // Only use keyboard analog conversion if there's no touch input
       if (controls.analogMagnitude === 0) {
         // Calculate analog values from keyboard inputs
