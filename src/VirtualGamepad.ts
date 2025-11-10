@@ -22,6 +22,12 @@ export class VirtualGamepad {
     lateralSpeed: number;
   } = { rotationSpeed: 0, forwardSpeed: 0, lateralSpeed: 0 };
 
+  // Keyboard and mouse support
+  private pressedKeys: Set<string> = new Set();
+  private isPointerLocked: boolean = false;
+  private mouseSensitivity: number = 0.002; // Radians per pixel
+  private currentCameraMode: 'traditional' | 'over-shoulder' = 'traditional';
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
@@ -34,6 +40,8 @@ export class VirtualGamepad {
       booster: false,
       analogMagnitude: 0,
       analogAngle: 0,
+      mouseRotationDelta: 0,
+      mousePitchDelta: 0,
     };
     this.touches = new Map();
 
@@ -59,6 +67,8 @@ export class VirtualGamepad {
     };
 
     this.setupTouchListeners();
+    this.setupKeyboardListeners();
+    this.setupMouseListeners();
     this.draw();
   }
 
@@ -67,6 +77,154 @@ export class VirtualGamepad {
     this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
     this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
     this.canvas.addEventListener('touchcancel', this.handleTouchEnd.bind(this), { passive: false });
+  }
+
+  private setupKeyboardListeners(): void {
+    window.addEventListener('keydown', this.handleKeyDown.bind(this));
+    window.addEventListener('keyup', this.handleKeyUp.bind(this));
+  }
+
+  private setupMouseListeners(): void {
+    this.canvas.addEventListener('click', this.handleMouseClick.bind(this));
+    this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+
+    // Pointer lock change event
+    document.addEventListener('pointerlockchange', () => {
+      this.isPointerLocked = document.pointerLockElement === this.canvas;
+    });
+  }
+
+  private handleKeyDown(e: KeyboardEvent): void {
+    // Prevent default for game keys to avoid scrolling
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+      e.preventDefault();
+    }
+
+    // Avoid key repeat
+    if (this.pressedKeys.has(e.key)) {
+      return;
+    }
+    this.pressedKeys.add(e.key);
+
+    // WASD and Arrow keys for movement
+    if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
+      this.controls.forward = true;
+    }
+    if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
+      this.controls.backward = true;
+    }
+    if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
+      this.controls.left = true;
+    }
+    if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') {
+      this.controls.right = true;
+    }
+
+    // Spacebar for jump (traditional mode only)
+    if (e.key === ' ') {
+      this.controls.jump = true;
+    }
+
+    // C key to toggle camera
+    if (e.key === 'c' || e.key === 'C') {
+      if (this.onCameraToggle) {
+        this.onCameraToggle();
+      }
+    }
+  }
+
+  private handleKeyUp(e: KeyboardEvent): void {
+    this.pressedKeys.delete(e.key);
+
+    // WASD and Arrow keys
+    if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
+      this.controls.forward = false;
+    }
+    if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') {
+      this.controls.backward = false;
+    }
+    if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') {
+      this.controls.left = false;
+    }
+    if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') {
+      this.controls.right = false;
+    }
+
+    // Spacebar
+    if (e.key === ' ') {
+      this.controls.jump = false;
+    }
+  }
+
+  private handleMouseClick(e: MouseEvent): void {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Check if click is on jump button
+    const jumpDist = Math.sqrt(
+      Math.pow(x - this.jumpButton.x, 2) + Math.pow(y - this.jumpButton.y, 2)
+    );
+
+    if (jumpDist < this.jumpButton.radius * 1.5) {
+      const now = Date.now();
+      const timeSinceLastTap = now - this.lastJumpTapTime;
+
+      // Check for double-click
+      if (timeSinceLastTap < this.doubleTapWindow && timeSinceLastTap > 0) {
+        // Double-click detected - activate booster
+        this.controls.booster = true;
+        setTimeout(() => {
+          this.controls.booster = false;
+        }, 100);
+      } else {
+        // Single click - jump
+        this.controls.jump = true;
+        setTimeout(() => {
+          this.controls.jump = false;
+        }, 100);
+      }
+
+      this.lastJumpTapTime = now;
+      return;
+    }
+
+    // Check if click is on camera button
+    const cameraDist = Math.sqrt(
+      Math.pow(x - this.cameraButton.x, 2) + Math.pow(y - this.cameraButton.y, 2)
+    );
+
+    if (cameraDist < this.cameraButton.radius * 1.5) {
+      const now = Date.now();
+      const timeSinceLastTap = now - this.lastCameraTapTime;
+
+      // Check for double-click to toggle debug mode
+      if (timeSinceLastTap < this.doubleTapWindow && timeSinceLastTap > 0) {
+        this.debugMode = !this.debugMode;
+      } else {
+        // Single click - toggle camera mode
+        if (this.onCameraToggle) {
+          this.onCameraToggle();
+        }
+      }
+
+      this.lastCameraTapTime = now;
+      return;
+    }
+
+    // Click anywhere else in over-shoulder mode to request pointer lock
+    if (this.currentCameraMode === 'over-shoulder' && !this.isPointerLocked) {
+      this.canvas.requestPointerLock();
+    }
+  }
+
+  private handleMouseMove(e: MouseEvent): void {
+    // Only handle mouse movement in over-shoulder mode with pointer lock
+    if (this.currentCameraMode === 'over-shoulder' && this.isPointerLocked) {
+      // movementX and movementY are the raw mouse deltas
+      this.controls.mouseRotationDelta = -e.movementX * this.mouseSensitivity;
+      this.controls.mousePitchDelta = -e.movementY * this.mouseSensitivity;
+    }
   }
 
   private handleTouchStart(e: TouchEvent): void {
@@ -405,7 +563,43 @@ export class VirtualGamepad {
   }
 
   public getControls(): Controls {
-    return { ...this.controls };
+    const controls = { ...this.controls };
+
+    // In over-shoulder mode, convert keyboard inputs to analog values
+    if (this.currentCameraMode === 'over-shoulder' && !this.isPointerLocked) {
+      // Only use keyboard analog conversion if there's no touch input
+      if (controls.analogMagnitude === 0) {
+        // Calculate analog values from keyboard inputs
+        let analogX = 0;
+        let analogY = 0;
+
+        if (controls.forward) analogY -= 1;
+        if (controls.backward) analogY += 1;
+        if (controls.left) analogX -= 1;
+        if (controls.right) analogX += 1;
+
+        // Calculate magnitude and angle
+        const magnitude = Math.sqrt(analogX * analogX + analogY * analogY);
+        if (magnitude > 0) {
+          controls.analogMagnitude = Math.min(magnitude, 1.0);
+          controls.analogAngle = Math.atan2(analogY, analogX);
+        }
+      }
+    }
+
+    // Reset mouse deltas after reading (they're per-frame values)
+    this.controls.mouseRotationDelta = 0;
+    this.controls.mousePitchDelta = 0;
+    return controls;
+  }
+
+  public setCameraMode(mode: 'traditional' | 'over-shoulder'): void {
+    this.currentCameraMode = mode;
+
+    // Exit pointer lock when switching to traditional mode
+    if (mode === 'traditional' && this.isPointerLocked) {
+      document.exitPointerLock();
+    }
   }
 
   public resize(width: number, height: number): void {

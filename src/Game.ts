@@ -155,6 +155,8 @@ export class Game {
     // Set up camera toggle callback
     this.gamepad.setCameraToggleCallback(() => {
       this.player.toggleCameraMode();
+      // Notify gamepad of the new camera mode
+      this.gamepad.setCameraMode(this.player.getCameraMode());
     });
 
     // Add click handler to skip/speed up intro

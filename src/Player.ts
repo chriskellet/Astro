@@ -1213,38 +1213,51 @@ export class Player {
   }
 
   private updateRotation(deltaTime: number, controls: Controls): void {
-    // Calculate the shortest rotation difference
-    let rotationDiff = this.targetRotationY - this.mesh.rotation.y;
+    // In over-shoulder mode with mouse input, apply direct rotation from mouse
+    if (this.cameraMode === 'over-shoulder' && controls.mouseRotationDelta !== 0) {
+      // Apply mouse rotation directly for instant camera control
+      this.mesh.rotation.y += controls.mouseRotationDelta;
 
-    // Normalize the angle difference to [-π, π] to take the shortest path
-    while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
-    while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
+      // Update target rotation to match current rotation
+      this.targetRotationY = this.mesh.rotation.y;
 
-    // Smoothly interpolate rotation
-    // Use slower rotation speed in over-the-shoulder mode to prevent dizziness
-    let rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
-
-    // In over-the-shoulder mode, apply analog magnitude and lateral input scaling
-    if (this.cameraMode === 'over-shoulder') {
-      // Scale by magnitude (how far stick is pushed)
-      rotationSpeed *= controls.analogMagnitude;
-
-      // Scale by lateral input ratio (how much turning vs forward movement)
-      // Straight forward = slow turn, diagonal = medium turn, pure lateral = fast turn
-      rotationSpeed *= this.lateralInputRatio;
-    }
-
-    // Store actual rotation speed for debug display
-    this.actualRotationSpeed = rotationSpeed;
-
-    const maxRotationStep = rotationSpeed * deltaTime;
-
-    if (Math.abs(rotationDiff) < maxRotationStep) {
-      // Close enough, snap to target
-      this.mesh.rotation.y = this.targetRotationY;
+      // Store rotation speed for debug display
+      this.actualRotationSpeed = Math.abs(controls.mouseRotationDelta) / deltaTime;
     } else {
-      // Rotate towards target at constant speed
-      this.mesh.rotation.y += Math.sign(rotationDiff) * maxRotationStep;
+      // Standard rotation logic (keyboard/touch controls)
+      // Calculate the shortest rotation difference
+      let rotationDiff = this.targetRotationY - this.mesh.rotation.y;
+
+      // Normalize the angle difference to [-π, π] to take the shortest path
+      while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
+      while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
+
+      // Smoothly interpolate rotation
+      // Use slower rotation speed in over-the-shoulder mode to prevent dizziness
+      let rotationSpeed = this.cameraMode === 'over-shoulder' ? 4 : this.rotationSpeed;
+
+      // In over-the-shoulder mode, apply analog magnitude and lateral input scaling
+      if (this.cameraMode === 'over-shoulder') {
+        // Scale by magnitude (how far stick is pushed)
+        rotationSpeed *= controls.analogMagnitude;
+
+        // Scale by lateral input ratio (how much turning vs forward movement)
+        // Straight forward = slow turn, diagonal = medium turn, pure lateral = fast turn
+        rotationSpeed *= this.lateralInputRatio;
+      }
+
+      // Store actual rotation speed for debug display
+      this.actualRotationSpeed = rotationSpeed;
+
+      const maxRotationStep = rotationSpeed * deltaTime;
+
+      if (Math.abs(rotationDiff) < maxRotationStep) {
+        // Close enough, snap to target
+        this.mesh.rotation.y = this.targetRotationY;
+      } else {
+        // Rotate towards target at constant speed
+        this.mesh.rotation.y += Math.sign(rotationDiff) * maxRotationStep;
+      }
     }
 
     // Normalize final rotation to [-π, π]

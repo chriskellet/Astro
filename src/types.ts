@@ -47,6 +47,9 @@ export interface Controls {
   // Analog stick values (0-1 magnitude, angle in radians)
   analogMagnitude: number;
   analogAngle: number;
+  // Mouse rotation (for over-shoulder mode)
+  mouseRotationDelta: number; // Horizontal rotation delta
+  mousePitchDelta: number;    // Vertical pitch delta
 }
 
 export type CollectibleType = 'orb' | 'coin' | 'ring' | 'tnt' | 'star' | 'lightsaber' | 'deathstar';
