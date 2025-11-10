@@ -55,8 +55,8 @@ export class AdvancedMaterialManager {
         color = 0x808080;
         roughness = 0.85;
         metalness = 0.0;
-        displacementScale = 0.15;
-        bumpScale = 1.5;
+        displacementScale = 0; // Disabled - causes transparency on beveled edges
+        bumpScale = 2.0; // Increased bump for more depth perception
         break;
       case 'spring':
         color = 0x00ff00;

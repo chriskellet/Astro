@@ -6,7 +6,7 @@ import * as THREE from 'three';
  */
 export class GrassSystem {
   private grassMesh: THREE.InstancedMesh | null = null;
-  private readonly tuftsPerMeter = 2; // Density of grass tufts (much lower than individual blades)
+  private readonly tuftsPerMeter = 6; // Density of grass tufts for good clustering
   private readonly bladesPerTuft = 5; // Blades in each tuft
   private windTime: number = 0;
 
@@ -96,8 +96,8 @@ export class GrassSystem {
     const geometry = new THREE.BufferGeometry();
 
     // Grass blade shape
-    const width = 0.06;
-    const height = 0.5;
+    const width = 0.08;
+    const height = 0.6;
     const segments = 4;
     const bladesInTuft = 5;
 
@@ -108,8 +108,8 @@ export class GrassSystem {
     // Create multiple blades arranged in a circle
     for (let blade = 0; blade < bladesInTuft; blade++) {
       const angle = (blade / bladesInTuft) * Math.PI * 2;
-      const offsetX = Math.cos(angle) * 0.08;
-      const offsetZ = Math.sin(angle) * 0.08;
+      const offsetX = Math.cos(angle) * 0.12; // Wider spread within tuft
+      const offsetZ = Math.sin(angle) * 0.12;
       const rotation = angle + (Math.random() - 0.5) * 0.5;
 
       // Create blade vertices (bent/curved shape)
@@ -188,9 +188,9 @@ export class GrassSystem {
     for (let tuftIndex = 0; tuftIndex < tuftsCount; tuftIndex++) {
       // Random position on platform surface
       position.set(
-        platformPos.x + (Math.random() - 0.5) * platformSize.x * 0.85,
+        platformPos.x + (Math.random() - 0.5) * platformSize.x * 0.95,
         platformTop,
-        platformPos.z + (Math.random() - 0.5) * platformSize.z * 0.85
+        platformPos.z + (Math.random() - 0.5) * platformSize.z * 0.95
       );
 
       // Random rotation (only Y axis for natural look)
@@ -198,7 +198,7 @@ export class GrassSystem {
       quaternion.setFromEuler(rotation);
 
       // Random scale variation (height and width)
-      const scaleVariation = 0.8 + Math.random() * 0.4;
+      const scaleVariation = 0.9 + Math.random() * 0.5;
       scale.set(scaleVariation, scaleVariation, scaleVariation);
 
       // Build transform matrix
