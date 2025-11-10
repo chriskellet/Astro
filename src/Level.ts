@@ -1,17 +1,21 @@
 import * as THREE from 'three';
 import { Platform, Collectible, LevelData, Enemy, CollectibleType, EnemyType, SurfaceType } from './types';
 import { EnemyFactory } from './EnemyFactory';
+import { TextureManager } from './TextureManager';
+import { createBeveledBoxGeometry } from './GeometryUtils';
 
 export class Level {
   private scene: THREE.Scene;
   public data: LevelData;
   private enemyFactory: EnemyFactory;
   private collectibleType: CollectibleType;
+  private textureManager: TextureManager;
 
   constructor(scene: THREE.Scene, levelNumber: number = 1, collectibleType: CollectibleType = 'orb') {
     this.scene = scene;
     this.enemyFactory = new EnemyFactory(scene);
     this.collectibleType = collectibleType;
+    this.textureManager = new TextureManager();
     this.data = this.createLevel(levelNumber);
   }
 
@@ -444,15 +448,42 @@ export class Level {
     platformType: import('./types').PlatformType = 'static',
     surfaceType?: SurfaceType
   ): Platform {
-    const geometry = new THREE.BoxGeometry(width, height, depth);
+    // Use beveled box geometry for chamfered edges
+    // Calculate appropriate bevel based on platform size
+    const minDimension = Math.min(width, height, depth);
+    const bevelSize = Math.min(0.15, minDimension * 0.1);
+    const geometry = createBeveledBoxGeometry(width, height, depth, bevelSize);
 
     // If surfaceType is specified, use its color; otherwise use the provided color
     const finalColor = surfaceType ? this.getColorForSurface(surfaceType) : color;
 
+    // Determine texture type based on platform type and surface
+    let textureType: string;
+    if (platformType === 'spring') {
+      textureType = 'spring';
+    } else if (platformType === 'falling') {
+      textureType = 'falling';
+    } else if (platformType === 'elevator') {
+      textureType = 'elevator';
+    } else if (platformType === 'moving') {
+      textureType = 'moving';
+    } else {
+      textureType = surfaceType || 'default';
+    }
+
+    // Get texture and normal map from texture manager
+    const texture = this.textureManager.getTexture(textureType);
+    const normalMap = this.textureManager.getNormalMap(textureType);
+
+    // Create enhanced material with textures
     const material = new THREE.MeshStandardMaterial({
       color: finalColor,
-      metalness: 0.2,
-      roughness: 0.8,
+      map: texture,
+      normalMap: normalMap,
+      normalScale: new THREE.Vector2(0.5, 0.5), // Subtle normal mapping
+      metalness: platformType === 'elevator' || platformType === 'moving' ? 0.4 : 0.15,
+      roughness: textureType === 'ice' ? 0.3 : 0.75,
+      envMapIntensity: textureType === 'ice' ? 1.2 : 0.8,
     });
 
     const mesh = new THREE.Mesh(geometry, material);
@@ -460,9 +491,13 @@ export class Level {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
 
-    // Add edge highlights
+    // Add subtle edge highlights (slightly less visible due to bevels)
     const edges = new THREE.EdgesGeometry(geometry);
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.3, transparent: true });
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      opacity: 0.15,
+      transparent: true
+    });
     const edgeLines = new THREE.LineSegments(edges, lineMaterial);
     mesh.add(edgeLines);
 
@@ -920,5 +955,8 @@ export class Level {
     if (this.data.chickenBot) {
       this.scene.remove(this.data.chickenBot.mesh);
     }
+
+    // Dispose of texture manager resources
+    this.textureManager.dispose();
   }
 }
