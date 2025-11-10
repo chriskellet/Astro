@@ -6,6 +6,50 @@ export class TextureManager {
   private normalMapCache: Map<string, THREE.Texture> = new Map();
 
   /**
+   * Helper to create a canvas context, or null if not available (e.g., in tests)
+   */
+  private createCanvasContext(width: number, height: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      return { canvas, ctx };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Create a simple fallback texture for test environments
+   */
+  private createFallbackTexture(color: number = 0x808080): THREE.Texture {
+    const width = 2;
+    const height = 2;
+    const size = width * height;
+    const data = new Uint8Array(4 * size);
+
+    const r = (color >> 16) & 0xff;
+    const g = (color >> 8) & 0xff;
+    const b = color & 0xff;
+
+    for (let i = 0; i < size; i++) {
+      const stride = i * 4;
+      data[stride] = r;
+      data[stride + 1] = g;
+      data[stride + 2] = b;
+      data[stride + 3] = 255;
+    }
+
+    const texture = new THREE.DataTexture(data, width, height);
+    texture.needsUpdate = true;
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(2, 2);
+    return texture;
+  }
+
+  /**
    * Generate a procedural texture for a given surface type
    */
   public getTexture(surfaceType: SurfaceType | string): THREE.Texture {
@@ -86,10 +130,10 @@ export class TextureManager {
    * Create default concrete/metal texture
    */
   private createDefaultTexture(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(512, 512);
+    if (!canvasContext) return this.createFallbackTexture(0x4a90e2);
+
+    const { canvas, ctx } = canvasContext;
 
     // Base color
     ctx.fillStyle = '#4a90e2';
@@ -129,10 +173,10 @@ export class TextureManager {
    * Create stone texture
    */
   private createStoneTexture(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(512, 512);
+    if (!canvasContext) return this.createFallbackTexture(0x808080);
+
+    const { canvas, ctx } = canvasContext;
 
     // Base gray
     ctx.fillStyle = '#808080';
@@ -176,10 +220,10 @@ export class TextureManager {
    * Create ice texture
    */
   private createIceTexture(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(512, 512);
+    if (!canvasContext) return this.createFallbackTexture(0xadd8e6);
+
+    const { canvas, ctx } = canvasContext;
 
     // Base light blue
     ctx.fillStyle = '#add8e6';
@@ -225,10 +269,10 @@ export class TextureManager {
    * Create grass texture
    */
   private createGrassTexture(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(512, 512);
+    if (!canvasContext) return this.createFallbackTexture(0x50c878);
+
+    const { canvas, ctx } = canvasContext;
 
     // Base green
     ctx.fillStyle = '#50c878';
@@ -272,10 +316,10 @@ export class TextureManager {
    * Create spring platform texture
    */
   private createSpringTexture(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(512, 512);
+    if (!canvasContext) return this.createFallbackTexture(0x00ff00);
+
+    const { canvas, ctx } = canvasContext;
 
     // Base green
     ctx.fillStyle = '#00ff00';
@@ -309,10 +353,10 @@ export class TextureManager {
    * Create falling platform texture (warning pattern)
    */
   private createFallingTexture(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(512, 512);
+    if (!canvasContext) return this.createFallbackTexture(0xff9900);
+
+    const { canvas, ctx } = canvasContext;
 
     // Base orange
     ctx.fillStyle = '#ff9900';
@@ -347,10 +391,10 @@ export class TextureManager {
    * Create elevator platform texture
    */
   private createElevatorTexture(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(512, 512);
+    if (!canvasContext) return this.createFallbackTexture(0x9370db);
+
+    const { canvas, ctx } = canvasContext;
 
     // Base purple
     ctx.fillStyle = '#9370db';
@@ -388,10 +432,10 @@ export class TextureManager {
    * Create moving platform texture
    */
   private createMovingTexture(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(512, 512);
+    if (!canvasContext) return this.createFallbackTexture(0x20b2aa);
+
+    const { canvas, ctx } = canvasContext;
 
     // Base teal
     ctx.fillStyle = '#20b2aa';
@@ -434,10 +478,10 @@ export class TextureManager {
    * Create default normal map
    */
   private createDefaultNormalMap(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(256, 256);
+    if (!canvasContext) return this.createFallbackTexture(0x8080ff);
+
+    const { canvas, ctx } = canvasContext;
 
     // Base normal (pointing up: 128, 128, 255)
     ctx.fillStyle = 'rgb(128, 128, 255)';
@@ -462,10 +506,10 @@ export class TextureManager {
    * Create stone normal map
    */
   private createStoneNormalMap(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(256, 256);
+    if (!canvasContext) return this.createFallbackTexture(0x8080ff);
+
+    const { canvas, ctx } = canvasContext;
 
     ctx.fillStyle = 'rgb(128, 128, 255)';
     ctx.fillRect(0, 0, 256, 256);
@@ -490,10 +534,10 @@ export class TextureManager {
    * Create ice normal map
    */
   private createIceNormalMap(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(256, 256);
+    if (!canvasContext) return this.createFallbackTexture(0x8080ff);
+
+    const { canvas, ctx } = canvasContext;
 
     ctx.fillStyle = 'rgb(128, 128, 255)';
     ctx.fillRect(0, 0, 256, 256);
@@ -524,10 +568,10 @@ export class TextureManager {
    * Create grass normal map
    */
   private createGrassNormalMap(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(256, 256);
+    if (!canvasContext) return this.createFallbackTexture(0x8080ff);
+
+    const { canvas, ctx } = canvasContext;
 
     ctx.fillStyle = 'rgb(128, 128, 255)';
     ctx.fillRect(0, 0, 256, 256);
@@ -551,10 +595,10 @@ export class TextureManager {
    * Create spring normal map (coiled effect)
    */
   private createSpringNormalMap(): THREE.Texture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d')!;
+    const canvasContext = this.createCanvasContext(256, 256);
+    if (!canvasContext) return this.createFallbackTexture(0x8080ff);
+
+    const { canvas, ctx } = canvasContext;
 
     ctx.fillStyle = 'rgb(128, 128, 255)';
     ctx.fillRect(0, 0, 256, 256);
