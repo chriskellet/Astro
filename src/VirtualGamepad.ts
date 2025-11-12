@@ -44,6 +44,7 @@ export class VirtualGamepad {
       analogAngle: 0,
       mouseRotationDelta: 0,
       mousePitchDelta: 0,
+      isKeyboardMovement: false,
     };
     this.touches = new Map();
 
@@ -620,6 +621,7 @@ export class VirtualGamepad {
         if (magnitude > 0) {
           controls.analogMagnitude = Math.min(magnitude, 1.0);
           controls.analogAngle = Math.atan2(analogY, analogX);
+          controls.isKeyboardMovement = true; // Mark as keyboard input
         }
       }
     }

@@ -688,13 +688,15 @@ export class Player {
     if (moveVector.length() > 0) {
       moveVector.normalize();
 
-      // Update target rotation based on movement direction
-      // In over-shoulder mode: keyboard never changes rotation (only mouse does)
-      // In traditional mode: always rotate to face movement direction
+      // Update target rotation based on movement direction and input source
       if (this.cameraMode === 'traditional') {
+        // Traditional mode: always rotate to face movement direction
+        this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
+      } else if (this.cameraMode === 'over-shoulder' && !controls.isKeyboardMovement) {
+        // Over-shoulder with touch/analog: rotate to face movement direction
         this.targetRotationY = Math.atan2(moveVector.x, moveVector.z);
       }
-      // Over-shoulder mode: rotation controlled by mouse only, not keyboard movement
+      // Over-shoulder with keyboard: no rotation (mouse controls rotation)
 
       // Only apply movement if magnitude is above threshold
       // This allows rotation without movement for fine adjustments

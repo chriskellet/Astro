@@ -50,6 +50,8 @@ export interface Controls {
   // Mouse rotation (for over-shoulder mode)
   mouseRotationDelta: number; // Horizontal rotation delta
   mousePitchDelta: number;    // Vertical pitch delta
+  // Track input source for movement (to distinguish touch vs keyboard)
+  isKeyboardMovement: boolean;
 }
 
 export type CollectibleType = 'orb' | 'coin' | 'ring' | 'tnt' | 'star' | 'lightsaber' | 'deathstar';
