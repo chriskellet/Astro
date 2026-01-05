@@ -25,6 +25,7 @@ export class Player {
   private currentPlatform: import('./types').Platform | null = null;
   private leftFootFlame!: THREE.Mesh;
   private rightFootFlame!: THREE.Mesh;
+  private mouthFlame: THREE.Mesh | null = null; // Only used for Bowser
   private lastJumpState: boolean = false;
   private rocketJumpAvailable: boolean = true;
   private lastBoosterState: boolean = false;
@@ -629,6 +630,22 @@ export class Player {
     this.rightFootFlame.rotation.x = Math.PI;
     this.bodyParts.rightFoot.add(this.rightFootFlame);
 
+    // ===== BOWSER MOUTH FLAME =====
+    // Bowser breathes fire from his mouth in addition to foot rockets
+    if (this.skin.id === 'bowser') {
+      const mouthFlameGeometry = new THREE.ConeGeometry(0.15, 0.6, 8);
+      const mouthFlameMaterial = new THREE.MeshBasicMaterial({
+        color: 0xff4400, // Slightly more orange for mouth fire
+        transparent: true,
+        opacity: 0,
+      });
+      this.mouthFlame = new THREE.Mesh(mouthFlameGeometry, mouthFlameMaterial);
+      // Position in front of the face, pointing forward
+      this.mouthFlame.position.set(0, -0.05, 0.55);
+      this.mouthFlame.rotation.x = -Math.PI / 2; // Point forward
+      this.bodyParts.head.add(this.mouthFlame);
+    }
+
     return group;
   }
 
@@ -885,6 +902,21 @@ export class Player {
         if (Math.random() > 0.3) {
           this.particles.emitSmoke(rightFootPos, 1, this.state.velocity);
         }
+
+        // Bowser breathes fire from his mouth
+        if (this.skin.id === 'bowser') {
+          // Calculate mouth position in world space (in front of head)
+          const mouthPos = this.state.position.clone();
+          mouthPos.y += 1.4; // Head height
+          // Get forward direction from player rotation
+          const forward = new THREE.Vector3(0, 0, 1);
+          forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
+          mouthPos.add(forward.multiplyScalar(0.5)); // Offset forward from head
+          // Emit flame in the direction the player is facing
+          const fireDirection = new THREE.Vector3(0, 0, 1);
+          fireDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
+          this.particles.emitFlame(mouthPos, fireDirection, 3);
+        }
       } else {
         // Spluttering - less smoke
         if (Math.random() > 0.5) { // Only emit 50% of the time when spluttering
@@ -904,12 +936,25 @@ export class Player {
       const flameScale = (1 + Math.sin(Date.now() * 0.02) * 0.3) * thrustMultiplier;
       this.leftFootFlame.scale.set(1, flameScale, 1);
       this.rightFootFlame.scale.set(1, flameScale, 1);
+
+      // Animate Bowser's mouth flame
+      if (this.mouthFlame) {
+        const mouthMat = this.mouthFlame.material as THREE.MeshBasicMaterial;
+        mouthMat.opacity = flameOpacity;
+        // Make mouth flame flicker more aggressively
+        const mouthFlameScale = (1 + Math.sin(Date.now() * 0.025) * 0.4) * thrustMultiplier;
+        this.mouthFlame.scale.set(1, mouthFlameScale, 1);
+      }
     } else if (!controls.booster) {
       // Button released - deactivate booster
       this.state.isBoosterActive = false;
       // Hide flames
       (this.leftFootFlame.material as THREE.MeshBasicMaterial).opacity = 0;
       (this.rightFootFlame.material as THREE.MeshBasicMaterial).opacity = 0;
+      // Hide Bowser's mouth flame
+      if (this.mouthFlame) {
+        (this.mouthFlame.material as THREE.MeshBasicMaterial).opacity = 0;
+      }
     }
 
     this.lastBoosterState = controls.booster;
