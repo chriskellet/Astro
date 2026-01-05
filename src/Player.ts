@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { PlayerState, Controls, SkinDefinition, SurfaceType, CameraMode } from './types';
+import { PlayerState, Controls, SkinDefinition, SurfaceType, CameraMode, AttackType } from './types';
 import { Physics } from './Physics';
 import { ParticleSystem } from './ParticleSystem';
-import { getDefaultSkin } from './skins';
+import { getDefaultSkin, getAttackTypeForSkin, getAttackConfigForSkin, AttackConfig } from './skins';
 
 export class Player {
   public mesh: THREE.Group;
@@ -71,11 +71,23 @@ export class Player {
   // Falling animation
   private fallingFastThreshold: number = -15; // velocity threshold for flailing animation
 
+  // Attack system
+  private attackType: AttackType;
+  private attackConfig: AttackConfig;
+  private attackCooldown: number = 0;
+  private isAttacking: boolean = false;
+  private attackAnimationTime: number = 0;
+  private lastAttackState: boolean = false;
+
   constructor(physics: Physics, camera: THREE.Camera, particles: ParticleSystem, skin?: SkinDefinition) {
     this.physics = physics;
     this.camera = camera;
     this.particles = particles;
     this.skin = skin || getDefaultSkin();
+
+    // Initialize attack system based on skin
+    this.attackType = getAttackTypeForSkin(this.skin.id);
+    this.attackConfig = getAttackConfigForSkin(this.skin.id);
 
     // Traditional camera: side view, elevated and pulled back
     this.traditionalCameraOffset = new THREE.Vector3(0, 8, 12);
@@ -959,6 +971,9 @@ export class Player {
 
     this.lastBoosterState = controls.booster;
 
+    // Handle ground attack
+    this.handleAttack(controls, deltaTime);
+
     // Keep within boundaries
     this.physics.checkBoundary(this.state.position, 250);
 
@@ -1260,6 +1275,64 @@ export class Player {
       this.bodyParts.rightUpperLeg.rotation.z *= 0.95;
       this.bodyParts.head.rotation.x *= 0.95;
     }
+
+    // ===== ATTACK ANIMATION =====
+    if (this.isAttacking) {
+      const attackProgress = this.attackAnimationTime / 0.3; // 0 to 1 over 0.3 seconds
+
+      if (this.attackConfig.isProjectile) {
+        // Projectile attack animation (throwing/shooting motion)
+        // Right arm extends forward
+        const armExtension = Math.sin(attackProgress * Math.PI);
+        this.bodyParts.rightUpperArm.rotation.x = -1.2 * armExtension;
+        this.bodyParts.rightUpperArm.rotation.z = -0.3 * armExtension;
+        this.bodyParts.rightLowerArm.rotation.x = -0.5 * armExtension;
+
+        // Slight torso rotation into the throw
+        this.bodyParts.torso.rotation.y = -0.2 * armExtension;
+
+        // Left arm pulls back for balance
+        this.bodyParts.leftUpperArm.rotation.x = 0.4 * armExtension;
+      } else {
+        // Melee attack animation (swing motion)
+        const swingAngle = Math.sin(attackProgress * Math.PI);
+
+        switch (this.attackType) {
+          case 'lightsaber':
+            // Lightsaber swing - wide arc
+            this.bodyParts.rightUpperArm.rotation.x = -1.5 + swingAngle * 2.5;
+            this.bodyParts.rightUpperArm.rotation.z = -0.5 + swingAngle * 0.8;
+            this.bodyParts.rightLowerArm.rotation.x = -0.3;
+            this.bodyParts.torso.rotation.y = -0.3 + swingAngle * 0.6;
+            break;
+          case 'forcepush':
+            // Force push - both arms extend forward
+            this.bodyParts.rightUpperArm.rotation.x = -1.3 * swingAngle;
+            this.bodyParts.leftUpperArm.rotation.x = -1.3 * swingAngle;
+            this.bodyParts.rightLowerArm.rotation.x = -0.4 * swingAngle;
+            this.bodyParts.leftLowerArm.rotation.x = -0.4 * swingAngle;
+            this.bodyParts.torso.rotation.x = 0.2 * swingAngle;
+            break;
+          case 'pickaxe':
+            // Pickaxe swing - overhead chop
+            this.bodyParts.rightUpperArm.rotation.x = -2.0 + swingAngle * 2.5;
+            this.bodyParts.rightLowerArm.rotation.x = -0.8 + swingAngle * 0.5;
+            this.bodyParts.torso.rotation.x = 0.2 * swingAngle;
+            break;
+          case 'spindash':
+            // Spin dash - whole body curls
+            const spinProgress = attackProgress * Math.PI * 4; // Multiple spins
+            this.bodyParts.torso.rotation.y = spinProgress;
+            this.bodyParts.leftUpperArm.rotation.z = -0.5;
+            this.bodyParts.rightUpperArm.rotation.z = 0.5;
+            this.bodyParts.leftUpperLeg.rotation.x = 0.5;
+            this.bodyParts.rightUpperLeg.rotation.x = 0.5;
+            this.bodyParts.leftLowerLeg.rotation.x = 1.0;
+            this.bodyParts.rightLowerLeg.rotation.x = 1.0;
+            break;
+        }
+      }
+    }
   }
 
   private updateRotation(deltaTime: number, controls: Controls): void {
@@ -1340,6 +1413,81 @@ export class Player {
 
   public toggleCameraMode(): void {
     this.cameraMode = this.cameraMode === 'traditional' ? 'over-shoulder' : 'traditional';
+  }
+
+  private handleAttack(controls: Controls, deltaTime: number): void {
+    // Update attack cooldown
+    if (this.attackCooldown > 0) {
+      this.attackCooldown -= deltaTime;
+    }
+
+    // Update attack animation time
+    if (this.isAttacking) {
+      this.attackAnimationTime += deltaTime;
+      if (this.attackAnimationTime > 0.3) {
+        this.isAttacking = false;
+        this.attackAnimationTime = 0;
+      }
+    }
+
+    // Check for new attack (only trigger on button press, not hold, except for firebreath)
+    const canAttack = this.attackCooldown <= 0;
+    const attackPressed = controls.attack && !this.lastAttackState;
+    const attackHeld = controls.attack && this.attackType === 'firebreath'; // Firebreath can be held
+
+    if (canAttack && (attackPressed || attackHeld)) {
+      this.performAttack();
+    }
+
+    this.lastAttackState = controls.attack;
+  }
+
+  private performAttack(): void {
+    // Set cooldown
+    this.attackCooldown = this.attackConfig.cooldown;
+    this.isAttacking = true;
+    this.attackAnimationTime = 0;
+
+    // Calculate attack direction (forward from player)
+    const direction = new THREE.Vector3(0, 0, 1);
+    direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.mesh.rotation.y);
+
+    // Calculate attack origin position (in front of player at chest height)
+    const attackOrigin = this.state.position.clone();
+    attackOrigin.y += 0.8; // Chest height
+    attackOrigin.add(direction.clone().multiplyScalar(0.5)); // Slightly in front
+
+    if (this.attackConfig.isProjectile) {
+      // Emit projectile attack
+      this.particles.emitAttackProjectile(
+        attackOrigin,
+        direction,
+        this.attackType,
+        this.attackConfig.color,
+        this.attackConfig.speed,
+        this.attackConfig.damage,
+        this.attackConfig.particleCount
+      );
+    } else {
+      // Emit melee attack effect
+      this.particles.emitMeleeEffect(
+        attackOrigin,
+        direction,
+        this.attackType,
+        this.attackConfig.color,
+        this.attackConfig.range,
+        this.attackConfig.damage,
+        this.attackConfig.particleCount
+      );
+    }
+  }
+
+  public getAttackConfig(): AttackConfig {
+    return this.attackConfig;
+  }
+
+  public isCurrentlyAttacking(): boolean {
+    return this.isAttacking;
   }
 
   public getCameraMode(): CameraMode {
