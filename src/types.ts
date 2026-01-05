@@ -44,6 +44,7 @@ export interface Controls {
   booster: boolean;
   forward: boolean;
   backward: boolean;
+  attack: boolean; // Ground attack button
   // Analog stick values (0-1 magnitude, angle in radians)
   analogMagnitude: number;
   analogAngle: number;
@@ -51,6 +52,19 @@ export interface Controls {
   mouseRotationDelta: number; // Horizontal rotation delta
   mousePitchDelta: number;    // Vertical pitch delta
 }
+
+// Attack types for different characters
+export type AttackType =
+  | 'fireball'      // Mario/Luigi
+  | 'firebreath'    // Bowser
+  | 'shell'         // Toad
+  | 'egg'           // Yoshi
+  | 'spindash'      // Sonic characters
+  | 'lightsaber'    // Luke, Yoda, Leia (Jedi)
+  | 'forcepush'     // Vader (Sith)
+  | 'blaster'       // Stormtrooper, Boba Fett
+  | 'pickaxe'       // Steve
+  | 'laser';        // Classic Astrobot
 
 export type CollectibleType = 'orb' | 'coin' | 'ring' | 'tnt' | 'star' | 'lightsaber' | 'deathstar';
 

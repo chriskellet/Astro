@@ -1,4 +1,4 @@
-import { SkinDefinition, CollectibleType } from './types';
+import { SkinDefinition, CollectibleType, AttackType } from './types';
 
 /**
  * Character skin definitions
@@ -286,5 +286,165 @@ export function getCollectibleTypeForSkin(skinId: string): CollectibleType {
     return 'deathstar';
   } else {
     return 'orb';
+  }
+}
+
+/**
+ * Get the attack type for a skin
+ * Each character has a unique attack style:
+ * - Mario/Luigi: Fireball projectile
+ * - Bowser: Fire breath cone attack
+ * - Toad: Shell projectile
+ * - Yoshi: Egg projectile
+ * - Sonic characters: Spin dash (short-range forward rush)
+ * - Jedi (Luke, Yoda, Leia): Lightsaber swing (melee arc)
+ * - Sith (Vader): Force push (short-range knockback)
+ * - Stormtrooper/Boba Fett: Blaster shot projectile
+ * - Steve: Pickaxe swing (melee)
+ * - Classic: Laser beam projectile
+ */
+export function getAttackTypeForSkin(skinId: string): AttackType {
+  if (['mario', 'luigi'].includes(skinId)) {
+    return 'fireball';
+  } else if (skinId === 'bowser') {
+    return 'firebreath';
+  } else if (skinId === 'toad') {
+    return 'shell';
+  } else if (skinId === 'yoshi') {
+    return 'egg';
+  } else if (['sonic', 'amy', 'tails', 'knuckles', 'shadow', 'rouge', 'silver'].includes(skinId)) {
+    return 'spindash';
+  } else if (['luke', 'yoda', 'leia'].includes(skinId)) {
+    return 'lightsaber';
+  } else if (skinId === 'vader') {
+    return 'forcepush';
+  } else if (['stormtrooper', 'bobafett'].includes(skinId)) {
+    return 'blaster';
+  } else if (skinId === 'steve') {
+    return 'pickaxe';
+  } else {
+    return 'laser';
+  }
+}
+
+/**
+ * Get attack configuration for a skin
+ * Returns cooldown, range, damage, and visual properties
+ */
+export interface AttackConfig {
+  cooldown: number;       // Seconds between attacks
+  damage: number;         // Damage dealt to enemies
+  range: number;          // Attack range in units
+  speed: number;          // Projectile speed (0 for melee)
+  color: number;          // Primary color for projectile/effect
+  isProjectile: boolean;  // Whether it's a projectile or melee
+  particleCount: number;  // Number of particles to emit
+}
+
+export function getAttackConfigForSkin(skinId: string): AttackConfig {
+  const attackType = getAttackTypeForSkin(skinId);
+
+  switch (attackType) {
+    case 'fireball':
+      return {
+        cooldown: 0.4,
+        damage: 50,
+        range: 15,
+        speed: 12,
+        color: 0xff6600,
+        isProjectile: true,
+        particleCount: 3,
+      };
+    case 'firebreath':
+      return {
+        cooldown: 0.1,
+        damage: 30,
+        range: 8,
+        speed: 8,
+        color: 0xff4400,
+        isProjectile: true,
+        particleCount: 5,
+      };
+    case 'shell':
+      return {
+        cooldown: 0.8,
+        damage: 60,
+        range: 20,
+        speed: 15,
+        color: 0x00aa00,
+        isProjectile: true,
+        particleCount: 1,
+      };
+    case 'egg':
+      return {
+        cooldown: 0.6,
+        damage: 50,
+        range: 18,
+        speed: 14,
+        color: 0xffffff,
+        isProjectile: true,
+        particleCount: 1,
+      };
+    case 'spindash':
+      return {
+        cooldown: 0.5,
+        damage: 40,
+        range: 4,
+        speed: 0,
+        color: 0x0066ff,
+        isProjectile: false,
+        particleCount: 8,
+      };
+    case 'lightsaber':
+      return {
+        cooldown: 0.3,
+        damage: 60,
+        range: 3,
+        speed: 0,
+        color: 0x00ff00,
+        isProjectile: false,
+        particleCount: 6,
+      };
+    case 'forcepush':
+      return {
+        cooldown: 0.8,
+        damage: 40,
+        range: 6,
+        speed: 0,
+        color: 0x8800ff,
+        isProjectile: false,
+        particleCount: 10,
+      };
+    case 'blaster':
+      return {
+        cooldown: 0.25,
+        damage: 40,
+        range: 25,
+        speed: 20,
+        color: 0xff0000,
+        isProjectile: true,
+        particleCount: 1,
+      };
+    case 'pickaxe':
+      return {
+        cooldown: 0.4,
+        damage: 55,
+        range: 2.5,
+        speed: 0,
+        color: 0x888888,
+        isProjectile: false,
+        particleCount: 4,
+      };
+    case 'laser':
+    default:
+      return {
+        cooldown: 0.3,
+        damage: 45,
+        range: 20,
+        speed: 18,
+        color: 0x00ffff,
+        isProjectile: true,
+        particleCount: 2,
+      };
   }
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { AttackType } from './types';
 
 interface Particle {
   position: THREE.Vector3;
@@ -7,7 +8,10 @@ interface Particle {
   maxLifetime: number;
   size: number;
   color: THREE.Color;
-  type?: 'flame' | 'smoke' | 'collect' | 'death' | 'enemyDefeated';
+  type?: 'flame' | 'smoke' | 'collect' | 'death' | 'enemyDefeated' | 'attack';
+  attackType?: AttackType;
+  damage?: number;
+  isPlayerAttack?: boolean;
 }
 
 export class ParticleSystem {
@@ -191,6 +195,251 @@ export class ParticleSystem {
     return false;
   }
 
+  // Emit attack projectile
+  public emitAttackProjectile(
+    position: THREE.Vector3,
+    direction: THREE.Vector3,
+    attackType: AttackType,
+    color: number,
+    speed: number,
+    damage: number,
+    count: number = 1
+  ): void {
+    for (let i = 0; i < count; i++) {
+      // Add slight spread for multi-particle attacks
+      const spread = count > 1 ? 0.15 : 0;
+      const spreadDirection = direction.clone();
+      if (spread > 0) {
+        spreadDirection.x += (Math.random() - 0.5) * spread;
+        spreadDirection.y += (Math.random() - 0.5) * spread;
+        spreadDirection.z += (Math.random() - 0.5) * spread;
+        spreadDirection.normalize();
+      }
+
+      const velocity = spreadDirection.multiplyScalar(speed);
+
+      // Determine particle properties based on attack type
+      let size = 0.2;
+      let maxLifetime = 2.0;
+
+      switch (attackType) {
+        case 'fireball':
+          size = 0.25;
+          maxLifetime = 1.5;
+          break;
+        case 'firebreath':
+          size = 0.2;
+          maxLifetime = 0.8;
+          break;
+        case 'shell':
+          size = 0.35;
+          maxLifetime = 2.0;
+          break;
+        case 'egg':
+          size = 0.3;
+          maxLifetime = 1.8;
+          break;
+        case 'blaster':
+          size = 0.15;
+          maxLifetime = 1.5;
+          break;
+        case 'laser':
+          size = 0.12;
+          maxLifetime = 1.2;
+          break;
+        default:
+          size = 0.2;
+          maxLifetime = 1.5;
+      }
+
+      const particle: Particle = {
+        position: position.clone(),
+        velocity,
+        lifetime: 0,
+        maxLifetime,
+        size,
+        color: new THREE.Color(color),
+        type: 'attack',
+        attackType,
+        damage,
+        isPlayerAttack: true,
+      };
+
+      this.particles.push(particle);
+      this.createAttackMesh(particle);
+    }
+
+    this.cleanupExcess();
+  }
+
+  // Create mesh for attack particles with special styling
+  private createAttackMesh(particle: Particle): void {
+    let geometry: THREE.BufferGeometry;
+    let material: THREE.Material;
+
+    switch (particle.attackType) {
+      case 'fireball':
+      case 'firebreath':
+        // Glowing sphere for fire attacks
+        geometry = new THREE.SphereGeometry(particle.size, 12, 12);
+        material = new THREE.MeshBasicMaterial({
+          color: particle.color,
+          transparent: true,
+          opacity: 0.9,
+        });
+        break;
+      case 'shell':
+        // Green shell shape (simplified as a sphere)
+        geometry = new THREE.SphereGeometry(particle.size, 8, 6);
+        material = new THREE.MeshStandardMaterial({
+          color: particle.color,
+          metalness: 0.3,
+          roughness: 0.7,
+        });
+        break;
+      case 'egg':
+        // Egg shape (elongated sphere)
+        geometry = new THREE.SphereGeometry(particle.size, 12, 12);
+        geometry.scale(0.8, 1, 0.8);
+        material = new THREE.MeshStandardMaterial({
+          color: particle.color,
+          metalness: 0.1,
+          roughness: 0.6,
+        });
+        break;
+      case 'blaster':
+        // Blaster bolt (elongated cylinder)
+        geometry = new THREE.CylinderGeometry(particle.size * 0.3, particle.size * 0.3, particle.size * 3, 8);
+        geometry.rotateX(Math.PI / 2);
+        material = new THREE.MeshBasicMaterial({
+          color: particle.color,
+          transparent: true,
+          opacity: 1,
+        });
+        break;
+      case 'laser':
+        // Laser beam (thin elongated shape)
+        geometry = new THREE.CylinderGeometry(particle.size * 0.4, particle.size * 0.4, particle.size * 4, 8);
+        geometry.rotateX(Math.PI / 2);
+        material = new THREE.MeshBasicMaterial({
+          color: particle.color,
+          transparent: true,
+          opacity: 0.9,
+        });
+        break;
+      default:
+        geometry = new THREE.SphereGeometry(particle.size, 8, 8);
+        material = new THREE.MeshBasicMaterial({
+          color: particle.color,
+          transparent: true,
+          opacity: 1,
+        });
+    }
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.copy(particle.position);
+    this.scene.add(mesh);
+    this.particleMeshes.push(mesh);
+  }
+
+  // Emit melee attack effect (for non-projectile attacks)
+  public emitMeleeEffect(
+    position: THREE.Vector3,
+    direction: THREE.Vector3,
+    attackType: AttackType,
+    color: number,
+    range: number,
+    damage: number,
+    count: number = 5
+  ): void {
+    // Create arc of particles in front of player
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count - 0.5) * Math.PI * 0.8; // Arc from -72 to +72 degrees
+      const rotatedDir = direction.clone();
+
+      // Rotate around Y axis to create arc
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const newX = rotatedDir.x * cos - rotatedDir.z * sin;
+      const newZ = rotatedDir.x * sin + rotatedDir.z * cos;
+      rotatedDir.x = newX;
+      rotatedDir.z = newZ;
+
+      // Calculate position along the arc
+      const attackPos = position.clone().add(rotatedDir.multiplyScalar(range * 0.5));
+
+      // Determine visual properties based on attack type
+      let size = 0.2;
+      let lifetime = 0.3;
+
+      switch (attackType) {
+        case 'lightsaber':
+          size = 0.15;
+          lifetime = 0.25;
+          break;
+        case 'forcepush':
+          size = 0.3;
+          lifetime = 0.4;
+          break;
+        case 'pickaxe':
+          size = 0.18;
+          lifetime = 0.2;
+          break;
+        case 'spindash':
+          size = 0.25;
+          lifetime = 0.35;
+          break;
+      }
+
+      const velocity = rotatedDir.clone().multiplyScalar(8);
+
+      const particle: Particle = {
+        position: attackPos,
+        velocity,
+        lifetime: 0,
+        maxLifetime: lifetime,
+        size,
+        color: new THREE.Color(color),
+        type: 'attack',
+        attackType,
+        damage,
+        isPlayerAttack: true,
+      };
+
+      this.particles.push(particle);
+      this.createParticleMesh(particle);
+    }
+
+    this.cleanupExcess();
+  }
+
+  // Check if any attack particles hit an enemy
+  public checkAttackCollisions(position: THREE.Vector3, radius: number): { hit: boolean; damage: number } {
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const particle = this.particles[i];
+      if (particle.type === 'attack' && particle.isPlayerAttack) {
+        const distance = particle.position.distanceTo(position);
+        if (distance < radius + particle.size) {
+          const damage = particle.damage || 0;
+          // Remove the particle on hit
+          const mesh = this.particleMeshes[i];
+          if (mesh) {
+            this.scene.remove(mesh);
+          }
+          this.particles.splice(i, 1);
+          this.particleMeshes.splice(i, 1);
+          return { hit: true, damage };
+        }
+      }
+    }
+    return { hit: false, damage: 0 };
+  }
+
+  // Get all active attack particles for collision checking
+  public getAttackParticles(): Particle[] {
+    return this.particles.filter(p => p.type === 'attack' && p.isPlayerAttack);
+  }
+
   private createParticleMesh(particle: Particle): void {
     const geometry = new THREE.SphereGeometry(particle.size, 8, 8);
     const material = new THREE.MeshBasicMaterial({
@@ -235,9 +484,20 @@ export class ParticleSystem {
       particle.position.add(particle.velocity.clone().multiplyScalar(deltaTime));
       mesh.position.copy(particle.position);
 
-      // Apply gravity to smoke and flames (less gravity for smoke)
+      // Apply gravity based on particle type
       if (particle.type === 'smoke') {
         particle.velocity.y += -3 * deltaTime; // Gentler fall for smoke
+      } else if (particle.type === 'attack') {
+        // Attack particles have less gravity for better gameplay feel
+        if (particle.attackType === 'fireball' || particle.attackType === 'firebreath') {
+          particle.velocity.y += -5 * deltaTime; // Slight drop for fireballs
+        } else if (particle.attackType === 'shell' || particle.attackType === 'egg') {
+          particle.velocity.y += -8 * deltaTime; // Moderate arc for shells/eggs
+        } else if (particle.attackType === 'blaster' || particle.attackType === 'laser') {
+          // No gravity for laser/blaster - straight line
+        } else {
+          particle.velocity.y += -3 * deltaTime; // Light gravity for melee effects
+        }
       } else {
         particle.velocity.y += -15 * deltaTime; // Standard gravity for other particles
       }

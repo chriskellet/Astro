@@ -426,6 +426,37 @@ export class Game {
         return; // Skip other collision checks for this enemy
       }
 
+      // Check if attack particles hit enemy
+      const attackHit = this.particles.checkAttackCollisions(enemy.position, enemyRadius);
+      if (attackHit.hit) {
+        // Enemy hit by player attack!
+        enemy.health -= attackHit.damage;
+
+        if (enemy.health <= 0) {
+          // Enemy defeated
+          enemy.isActive = false;
+
+          // Emit defeat particles with enemy color
+          const enemyColor = this.getEnemyColor(enemy.type);
+          this.particles.emitEnemyDefeatedEffect(enemy.position, enemyColor);
+
+          // Award score
+          this.player.addScore(50);
+          this.updateUI();
+
+          // Track enemy kill
+          this.enemiesKilled++;
+
+          // Hide enemy mesh
+          enemy.mesh.visible = false;
+        } else {
+          // Enemy damaged but not defeated - emit small hit effect
+          const enemyColor = this.getEnemyColor(enemy.type);
+          this.particles.emitEnemyDefeatedEffect(enemy.position.clone().add(new THREE.Vector3(0, 0.5, 0)), enemyColor);
+        }
+        return; // Skip other collision checks for this enemy
+      }
+
       const distance = playerPos.distanceTo(enemy.position);
       const collisionDistance = playerRadius + enemyRadius;
 

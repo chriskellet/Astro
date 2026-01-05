@@ -8,6 +8,7 @@ export class VirtualGamepad {
   private dpadCenter: { x: number; y: number };
   private dpadRadius: number;
   private jumpButton: { x: number; y: number; radius: number };
+  private attackButton: { x: number; y: number; radius: number };
   private cameraButton: { x: number; y: number; radius: number };
   private lastJumpTapTime: number = 0;
   private lastCameraTapTime: number = 0;
@@ -40,6 +41,7 @@ export class VirtualGamepad {
       backward: false,
       jump: false,
       booster: false,
+      attack: false,
       analogMagnitude: 0,
       analogAngle: 0,
       mouseRotationDelta: 0,
@@ -59,6 +61,13 @@ export class VirtualGamepad {
       x: canvas.width - 120,
       y: canvas.height - 120,
       radius: 60,
+    };
+
+    // Attack button above the jump button
+    this.attackButton = {
+      x: canvas.width - 120,
+      y: canvas.height - 250,
+      radius: 50,
     };
 
     // Camera toggle button in the top-right corner
@@ -149,6 +158,11 @@ export class VirtualGamepad {
         this.onCameraToggle();
       }
     }
+
+    // E key or Shift for attack
+    if (e.key === 'e' || e.key === 'E' || e.key === 'Shift') {
+      this.controls.attack = true;
+    }
   }
 
   private handleKeyUp(e: KeyboardEvent): void {
@@ -173,7 +187,14 @@ export class VirtualGamepad {
       this.controls.jump = false;
       this.controls.booster = false;
     }
+
+    // Attack key released
+    if (e.key === 'e' || e.key === 'E' || e.key === 'Shift') {
+      this.controls.attack = false;
+    }
   }
+
+  private mouseDownOnAttackButton: boolean = false;
 
   private handleMouseDown(e: MouseEvent): void {
     const rect = this.canvas.getBoundingClientRect();
@@ -202,6 +223,16 @@ export class VirtualGamepad {
 
       this.lastJumpTapTime = now;
     }
+
+    // Check if mousedown is on attack button
+    const attackDist = Math.sqrt(
+      Math.pow(x - this.attackButton.x, 2) + Math.pow(y - this.attackButton.y, 2)
+    );
+
+    if (attackDist < this.attackButton.radius * 1.5) {
+      this.mouseDownOnAttackButton = true;
+      this.controls.attack = true;
+    }
   }
 
   private handleMouseUp(): void {
@@ -209,6 +240,10 @@ export class VirtualGamepad {
       this.controls.jump = false;
       this.controls.booster = false;
       this.mouseDownOnJumpButton = false;
+    }
+    if (this.mouseDownOnAttackButton) {
+      this.controls.attack = false;
+      this.mouseDownOnAttackButton = false;
     }
   }
 
@@ -310,6 +345,16 @@ export class VirtualGamepad {
         this.lastJumpTapTime = now;
       }
 
+      // Check if touch is on attack button
+      const attackDist = Math.sqrt(
+        Math.pow(x - this.attackButton.x, 2) + Math.pow(y - this.attackButton.y, 2)
+      );
+
+      if (attackDist < this.attackButton.radius * 1.5) {
+        this.touches.set(touch.identifier, { x, y, zone: 'attack' });
+        this.controls.attack = true;
+      }
+
       // Check if touch is on camera button
       const cameraDist = Math.sqrt(
         Math.pow(x - this.cameraButton.x, 2) + Math.pow(y - this.cameraButton.y, 2)
@@ -374,6 +419,8 @@ export class VirtualGamepad {
         } else if (touchData.zone === 'jump') {
           this.controls.jump = false;
           this.controls.booster = false;
+        } else if (touchData.zone === 'attack') {
+          this.controls.attack = false;
         }
 
         this.touches.delete(touch.identifier);
@@ -531,6 +578,33 @@ export class VirtualGamepad {
       this.ctx.restore();
     }
 
+    // Draw attack button
+    this.ctx.save();
+
+    // Add glow effect when attacking
+    if (this.controls.attack) {
+      this.ctx.shadowBlur = 20;
+      this.ctx.shadowColor = '#ff3333';
+      this.ctx.globalAlpha = 0.8;
+      this.ctx.fillStyle = '#ff3333';
+    } else {
+      this.ctx.globalAlpha = 0.4;
+      this.ctx.fillStyle = '#ff6666';
+    }
+
+    this.ctx.beginPath();
+    this.ctx.arc(this.attackButton.x, this.attackButton.y, this.attackButton.radius, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.ctx.shadowBlur = 0;
+    this.ctx.globalAlpha = 1;
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = 'bold 24px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText('B', this.attackButton.x, this.attackButton.y);
+    this.ctx.restore();
+
     // Draw camera toggle button
     this.ctx.save();
     this.ctx.globalAlpha = 0.4;
@@ -649,6 +723,12 @@ export class VirtualGamepad {
       x: width - 120,
       y: height - 120,
       radius: 60,
+    };
+
+    this.attackButton = {
+      x: width - 120,
+      y: height - 250,
+      radius: 50,
     };
 
     this.cameraButton = {
